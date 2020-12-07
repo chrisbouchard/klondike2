@@ -13,10 +13,6 @@ pub enum Facing {
 }
 
 impl Facing {
-    pub fn flip(self, card: Card) -> Card {
-        card.with_facing(self)
-    }
-
     pub fn reversed(self) -> Self {
         match self {
             Self::FaceDown => Self::FaceUp,
@@ -87,19 +83,6 @@ impl Card {
 
     pub fn is_face_up(&self) -> bool {
         self.facing == Facing::FaceUp
-    }
-
-    pub fn with_facing(mut self, facing: Facing) -> Self {
-        self.facing = facing;
-        self
-    }
-
-    pub fn face_down(self) -> Self {
-        self.with_facing(Facing::FaceDown)
-    }
-
-    pub fn face_up(self) -> Self {
-        self.with_facing(Facing::FaceUp)
     }
 
     pub fn reverse(&mut self) {
