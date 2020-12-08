@@ -16,6 +16,7 @@ itertools = "0.9"
 num-traits = "0.2"
 termion = "1.5"
 tui = "0.13"
+velcro = "0.4"
 
 [lib]
 name = "klondike2_lib"

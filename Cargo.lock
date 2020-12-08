@@ -62,6 +62,7 @@ dependencies = [
  "num-traits",
  "termion",
  "tui",
+ "velcro",
 ]
 
 [[package]]
@@ -171,3 +172,33 @@ name = "unicode-xid"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f7fe0bb3479651439c9112f72b6c505038574c9fbb575ed1bf3b797fa39dd564"
+
+[[package]]
+name = "velcro"
+version = "0.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9a4289a30bd52e839a78c7b14cbfa62ea2091d23f69ebbc59e1210ffa54c8be9"
+dependencies = [
+ "velcro_macros",
+]
+
+[[package]]
+name = "velcro_core"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "65982cd5b45c157db983cd8ee6f494902148c274fda84157171ad8f42965ea15"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "velcro_macros"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1303ba837b8f4afbb4524b74da0710a6771773e9a9f57a6d8007a66ff0f6c8c0"
+dependencies = [
+ "syn",
+ "velcro_core",
+]

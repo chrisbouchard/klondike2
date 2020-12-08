@@ -18,13 +18,18 @@ pub enum PileId {
 
 impl PileId {
     pub fn standard_iter() -> impl Iterator<Item = PileId> {
-        iter::once(PileId::Stock)
-            .chain(iter::once(PileId::Waste))
-            .chain(card::Suit::into_enum_iter().map(PileId::Foundation))
+        velcro::iter![
+            PileId::Stock,
+            PileId::Waste,
+            ..card::Suit::into_enum_iter().map(PileId::Foundation)
+        ]
     }
 
     pub fn full_iter(tableaux_width: usize) -> impl Iterator<Item = PileId> {
-        Self::standard_iter().chain((0..tableaux_width).map(PileId::Tableaux))
+        velcro::iter![
+            ..Self::standard_iter(),
+            ..(0..tableaux_width).map(PileId::Tableaux)
+        ]
     }
 }
 
@@ -129,7 +134,7 @@ impl<'a> IntoIterator for &'a Pile {
 impl iter::FromIterator<card::Card> for Pile {
     fn from_iter<T: IntoIterator<Item = card::Card>>(iter: T) -> Self {
         Pile {
-            cards: iter.into_iter().collect_vec(),
+            cards: velcro::vec![..iter],
         }
     }
 }
