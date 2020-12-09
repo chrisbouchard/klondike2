@@ -6,9 +6,3 @@ pub mod game;
 pub mod pile;
 pub mod selection;
 pub mod table;
-
-// TODO: Should I expand these globs?
-pub use card::*;
-pub use pile::*;
-pub use selection::*;
-pub use table::*;
