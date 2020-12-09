@@ -1,3 +1,4 @@
+use super::action;
 use super::card;
 use super::pile;
 
@@ -85,14 +86,18 @@ impl Table {
                 })
             })
     }
+}
 
-    pub fn apply(&mut self, action: TableAction) {
+impl action::Actionable for Table {
+    type Action = TableAction;
+
+    fn apply(&mut self, action: Self::Action) {
         match action {
-            TableAction::Deal(target_pile_id) => {
+            Self::Action::Deal(target_pile_id) => {
                 let dealt_card = self.stock.take_top();
                 self.pile_mut(target_pile_id).place(dealt_card);
             }
-            TableAction::Draw(count) => {
+            Self::Action::Draw(count) => {
                 let empty = self.stock.is_empty();
 
                 if empty {
@@ -103,21 +108,14 @@ impl Table {
                     self.waste.place(drawn_cards);
                 }
             }
-            TableAction::Move(source_pile_id, target_pile_id, count) => {
+            Self::Action::Move(source_pile_id, target_pile_id, count) => {
                 let moved_cards = self.pile_mut(source_pile_id).take(count);
                 self.pile_mut(target_pile_id).place(moved_cards);
             }
-            TableAction::Reveal(target_pile_id) => self
+            Self::Action::Reveal(target_pile_id) => self
                 .pile_mut(target_pile_id)
                 .flip_top_to(card::Facing::FaceUp),
         }
-    }
-
-    pub fn apply_all<I>(&mut self, iterable: I)
-    where
-        I: IntoIterator<Item = TableAction>,
-    {
-        iterable.into_iter().for_each(|action| self.apply(action))
     }
 }
 
