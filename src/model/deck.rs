@@ -1,3 +1,5 @@
+use std::vec;
+
 use derivative::Derivative;
 use enum_iterator::IntoEnumIterator;
 use itertools::Itertools;
@@ -8,6 +10,8 @@ use super::card;
 pub trait Shuffler {
     fn shuffle(&mut self, cards: &mut [card::Card]);
 }
+
+pub type IntoIter = vec::IntoIter<card::Card>;
 
 #[derive(Debug, Clone)]
 pub struct Deck {
@@ -32,6 +36,15 @@ impl Deck {
         S: Shuffler,
     {
         shuffler.shuffle(&mut self.cards);
+    }
+}
+
+impl IntoIterator for Deck {
+    type Item = card::Card;
+    type IntoIter = IntoIter;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.cards.into_iter()
     }
 }
 
