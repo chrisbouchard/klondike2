@@ -10,13 +10,6 @@ pub enum TableAction {
     Reveal(pile::PileId),
 }
 
-#[derive(Debug, Clone)]
-pub struct TableCard<'table> {
-    pub card: &'table card::Card,
-    pub index: usize,
-    pub pile_id: pile::PileId,
-}
-
 #[derive(Debug, Clone, Default)]
 pub struct Table {
     stock: pile::Pile,
@@ -73,18 +66,6 @@ impl Table {
                 &mut self.tableaux[index]
             }
         }
-    }
-
-    pub fn cards(&self) -> impl Iterator<Item = TableCard> {
-        pile::PileId::full_iter(self.tableaux.len())
-            .map(move |pile_id| (pile_id, self.pile(pile_id)))
-            .flat_map(|(pile_id, pile)| {
-                pile.iter().enumerate().map(move |(index, card)| TableCard {
-                    card,
-                    index,
-                    pile_id,
-                })
-            })
     }
 }
 
