@@ -1,7 +1,7 @@
 use super::card;
 use super::pile;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub enum TableAction {
     Deal(pile::PileId),
     Draw(usize),
