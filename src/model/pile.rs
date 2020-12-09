@@ -42,6 +42,10 @@ pub struct Pile {
 }
 
 impl Pile {
+    pub const fn new() -> Self {
+        Pile { cards: Vec::new() }
+    }
+
     pub fn iter(&self) -> Iter {
         self.cards.iter()
     }

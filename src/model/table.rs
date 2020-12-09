@@ -27,7 +27,6 @@ pub struct Table {
     clubs_foundation: pile::Pile,
 
     tableaux: Vec<pile::Pile>,
-    empty_tableaux: pile::Pile,
 }
 
 impl Table {
@@ -41,6 +40,8 @@ impl Table {
     }
 
     pub fn pile(&self, pile_id: pile::PileId) -> &pile::Pile {
+        static EMPTY: pile::Pile = pile::Pile::new();
+
         match pile_id {
             pile::PileId::Stock => &self.stock,
             pile::PileId::Waste => &self.waste,
@@ -50,9 +51,7 @@ impl Table {
                 card::Suit::Diamonds => &self.diamonds_foundation,
                 card::Suit::Clubs => &self.clubs_foundation,
             },
-            pile::PileId::Tableaux(index) => {
-                self.tableaux.get(index).unwrap_or(&self.empty_tableaux)
-            }
+            pile::PileId::Tableaux(index) => self.tableaux.get(index).unwrap_or(&EMPTY),
         }
     }
 
@@ -68,7 +67,7 @@ impl Table {
             },
             pile::PileId::Tableaux(index) => {
                 if index >= self.tableaux.len() {
-                    self.tableaux.resize(index + 1, self.empty_tableaux.clone());
+                    self.tableaux.resize_with(index + 1, Default::default);
                 }
                 &mut self.tableaux[index]
             }
@@ -127,66 +126,53 @@ enum DealerState {
     Deal {
         current_index: usize,
         current_row: usize,
-        width: usize,
     },
     Reveal {
         current_index: usize,
-        width: usize,
     },
     Done,
 }
 
 impl DealerState {
-    fn new(tableaux_width: usize) -> Self {
+    const fn init() -> Self {
         Self::Deal {
             current_index: 0,
             current_row: 0,
-            width: tableaux_width,
         }
     }
 
-    fn next(&self) -> Self {
+    fn next(&self, tableaux_width: usize) -> Self {
         match self {
             &Self::Deal {
                 current_index,
                 current_row,
-                width,
             } => {
                 let next_index = current_index + 1;
 
-                if next_index < width {
+                if next_index < tableaux_width {
                     Self::Deal {
                         current_index: next_index,
                         current_row,
-                        width,
                     }
                 } else {
                     let next_row = current_row + 1;
 
-                    if next_row < width {
+                    if next_row < tableaux_width {
                         Self::Deal {
                             current_index: next_row,
                             current_row: next_row,
-                            width,
                         }
                     } else {
-                        Self::Reveal {
-                            current_index: 0,
-                            width,
-                        }
+                        Self::Reveal { current_index: 0 }
                     }
                 }
             }
-            &Self::Reveal {
-                current_index,
-                width,
-            } => {
+            &Self::Reveal { current_index } => {
                 let next_index = current_index + 1;
 
-                if next_index < width {
+                if next_index < tableaux_width {
                     Self::Reveal {
                         current_index: next_index,
-                        width,
                     }
                 } else {
                     Self::Done
@@ -197,15 +183,23 @@ impl DealerState {
     }
 }
 
-#[derive(Debug)]
+impl Default for DealerState {
+    fn default() -> Self {
+        Self::init()
+    }
+}
+
+#[derive(Debug, Default)]
 pub struct Dealer {
     state: DealerState,
+    tableaux_width: usize,
 }
 
 impl Dealer {
-    pub fn new(tableaux_width: usize) -> Self {
+    pub const fn new() -> Self {
         Dealer {
-            state: DealerState::new(tableaux_width),
+            state: DealerState::init(),
+            tableaux_width: 0,
         }
     }
 }
@@ -226,7 +220,7 @@ impl Iterator for Dealer {
             DealerState::Done => None,
         };
 
-        self.state = self.state.next();
+        self.state = self.state.next(self.tableaux_width);
         action
     }
 }
