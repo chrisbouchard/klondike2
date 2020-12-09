@@ -11,12 +11,39 @@ pub enum SelectionAction {
 }
 
 #[derive(Debug, Copy, Clone)]
-pub enum SelectionMode {
+enum SelectionMode {
     Held {
         source: pile::PileId,
         extra_count: usize,
     },
     Visual,
+}
+
+impl SelectionMode {
+    fn source(&self) -> Option<pile::PileId> {
+        match self {
+            Self::Held { source, .. } => Some(*source),
+            Self::Visual => None,
+        }
+    }
+
+    fn count(&self) -> usize {
+        match self {
+            Self::Held { extra_count, .. } => *extra_count + 1,
+            Self::Visual => 0,
+        }
+    }
+
+    fn resize(self, new_count: usize, current_target: pile::PileId) -> Self {
+        if new_count == 0 {
+            Self::Visual
+        } else {
+            Self::Held {
+                source: self.source().unwrap_or(current_target),
+                extra_count: new_count - 1,
+            }
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -38,17 +65,11 @@ impl Selection {
     }
 
     pub fn source(&self) -> Option<pile::PileId> {
-        match self.mode {
-            SelectionMode::Held { source, .. } => Some(source),
-            SelectionMode::Visual => None,
-        }
+        self.mode.source()
     }
 
     pub fn count(&self) -> usize {
-        match self.mode {
-            SelectionMode::Held { extra_count, .. } => extra_count + 1,
-            SelectionMode::Visual => 0,
-        }
+        self.mode.count()
     }
 }
 
@@ -57,11 +78,23 @@ impl action::Actionable for Selection {
 
     fn apply(&mut self, action: Self::Action) {
         match action {
-            Self::Action::Cancel => todo!(),
-            Self::Action::DecreaseCount(count) => todo!(),
-            Self::Action::IncreaseCount(count) => todo!(),
-            Self::Action::Move(target) => todo!(),
-            Self::Action::Place => todo!(),
+            Self::Action::Cancel => {
+                if let Some(source) = self.source() {
+                    self.target = source;
+                }
+
+                self.mode = SelectionMode::Visual;
+            }
+            Self::Action::DecreaseCount(count) => {
+                let new_count = self.count().saturating_sub(count);
+                self.mode = self.mode.resize(new_count, self.target);
+            }
+            Self::Action::IncreaseCount(count) => {
+                let new_count = self.count().saturating_add(count);
+                self.mode = self.mode.resize(new_count, self.target);
+            }
+            Self::Action::Move(target) => self.target = target,
+            Self::Action::Place => self.mode = SelectionMode::Visual,
         }
     }
 }
