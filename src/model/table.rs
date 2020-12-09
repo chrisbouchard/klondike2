@@ -34,7 +34,7 @@ impl Table {
     where
         I: IntoIterator<Item = card::Card>,
     {
-        let mut table = Table::default();
+        let mut table = Self::default();
         table.stock.place_cards(stock);
         table
     }
@@ -197,7 +197,7 @@ pub struct Dealer {
 
 impl Dealer {
     pub const fn new() -> Self {
-        Dealer {
+        Self {
             state: DealerState::init(),
             tableaux_width: 0,
         }

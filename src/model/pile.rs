@@ -43,7 +43,7 @@ pub struct Pile {
 
 impl Pile {
     pub const fn new() -> Self {
-        Pile { cards: Vec::new() }
+        Self { cards: Vec::new() }
     }
 
     pub fn iter(&self) -> Iter {
@@ -137,7 +137,7 @@ impl<'a> IntoIterator for &'a Pile {
 
 impl iter::FromIterator<card::Card> for Pile {
     fn from_iter<T: IntoIterator<Item = card::Card>>(iter: T) -> Self {
-        Pile {
+        Self {
             cards: velcro::vec![..iter],
         }
     }
