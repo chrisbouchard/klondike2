@@ -4,8 +4,7 @@ use super::pile;
 #[derive(Debug, Copy, Clone)]
 pub enum SelectionAction {
     Cancel,
-    DecreaseCount(usize),
-    IncreaseCount(usize),
+    Resize(usize),
     Move(pile::PileId),
     Place,
 }
@@ -85,13 +84,8 @@ impl action::Actionable for Selection {
 
                 self.mode = SelectionMode::Visual;
             }
-            Self::Action::DecreaseCount(count) => {
-                let new_count = self.count().saturating_sub(count);
-                self.mode = self.mode.resize(new_count, self.target);
-            }
-            Self::Action::IncreaseCount(count) => {
-                let new_count = self.count().saturating_add(count);
-                self.mode = self.mode.resize(new_count, self.target);
+            Self::Action::Resize(count) => {
+                self.mode = self.mode.resize(count, self.target);
             }
             Self::Action::Move(target) => self.target = target,
             Self::Action::Place => self.mode = SelectionMode::Visual,
