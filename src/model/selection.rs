@@ -10,7 +10,7 @@ pub enum SelectionAction {
 }
 
 #[derive(Debug, Copy, Clone)]
-enum SelectionMode {
+enum SelectionState {
     Held {
         source: pile::PileId,
         extra_count: usize,
@@ -18,7 +18,7 @@ enum SelectionMode {
     Visual,
 }
 
-impl SelectionMode {
+impl SelectionState {
     fn source(&self) -> Option<pile::PileId> {
         match self {
             Self::Held { source, .. } => Some(*source),
@@ -48,14 +48,14 @@ impl SelectionMode {
 #[derive(Debug, Clone)]
 pub struct Selection {
     target: pile::PileId,
-    mode: SelectionMode,
+    state: SelectionState,
 }
 
 impl Selection {
     pub const fn new() -> Self {
         Self {
             target: pile::PileId::Stock,
-            mode: SelectionMode::Visual,
+            state: SelectionState::Visual,
         }
     }
 
@@ -64,11 +64,11 @@ impl Selection {
     }
 
     pub fn source(&self) -> Option<pile::PileId> {
-        self.mode.source()
+        self.state.source()
     }
 
     pub fn count(&self) -> usize {
-        self.mode.count()
+        self.state.count()
     }
 }
 
@@ -82,13 +82,13 @@ impl action::Actionable for Selection {
                     self.target = source;
                 }
 
-                self.mode = SelectionMode::Visual;
+                self.state = SelectionState::Visual;
             }
             Self::Action::Resize(count) => {
-                self.mode = self.mode.resize(count, self.target);
+                self.state = self.state.resize(count, self.target);
             }
             Self::Action::Move(target) => self.target = target,
-            Self::Action::Place => self.mode = SelectionMode::Visual,
+            Self::Action::Place => self.state = SelectionState::Visual,
         }
     }
 }
