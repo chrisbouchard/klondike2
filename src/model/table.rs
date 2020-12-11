@@ -3,7 +3,7 @@ use super::card;
 use super::pile;
 
 #[derive(Debug, Copy, Clone)]
-pub enum TableAction {
+pub enum Action {
     Deal(pile::PileId),
     Draw(usize),
     Move(pile::PileId, pile::PileId, usize),
@@ -70,9 +70,9 @@ impl Table {
 }
 
 impl action::Actionable for Table {
-    type Action = TableAction;
+    type Action = Action;
 
-    fn apply(&mut self, action: Self::Action) {
+    fn apply(&mut self, action: Action) {
         match action {
             Self::Action::Deal(target_pile_id) => {
                 let dealt_card = self.stock.take_top();
@@ -93,9 +93,10 @@ impl action::Actionable for Table {
                 let moved_cards = self.pile_mut(source_pile_id).take(count);
                 self.pile_mut(target_pile_id).place(moved_cards);
             }
-            Self::Action::Reveal(target_pile_id) => self
-                .pile_mut(target_pile_id)
-                .flip_top_to(card::Facing::FaceUp),
+            Self::Action::Reveal(target_pile_id) => {
+                self.pile_mut(target_pile_id)
+                    .flip_top_to(card::Facing::FaceUp);
+            }
         }
     }
 }
@@ -184,17 +185,17 @@ impl Dealer {
 }
 
 impl Iterator for Dealer {
-    type Item = TableAction;
+    type Item = Action;
 
     fn next(&mut self) -> Option<Self::Item> {
         let action = match self.state {
             DealerState::Deal { current_index, .. } => {
                 let pile_id = pile::PileId::Tableaux(current_index);
-                Some(TableAction::Deal(pile_id))
+                Some(Action::Deal(pile_id))
             }
             DealerState::Reveal { current_index, .. } => {
                 let pile_id = pile::PileId::Tableaux(current_index);
-                Some(TableAction::Reveal(pile_id))
+                Some(Action::Reveal(pile_id))
             }
             DealerState::Done => None,
         };
