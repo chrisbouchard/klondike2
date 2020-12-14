@@ -2,14 +2,6 @@ use super::action;
 use super::card;
 use super::pile;
 
-#[derive(Debug, Copy, Clone)]
-pub enum Action {
-    Deal(pile::PileId),
-    Draw(usize),
-    Move(pile::PileId, pile::PileId, usize),
-    Reveal(pile::PileId),
-}
-
 #[derive(Debug, Clone, Default)]
 pub struct Table {
     stock: pile::Pile,
@@ -69,32 +61,39 @@ impl Table {
     }
 }
 
-impl action::Actionable for Table {
-    type Action = Action;
+#[derive(Debug, Copy, Clone)]
+pub enum Action {
+    Deal(pile::PileId),
+    Draw(usize),
+    Move(pile::PileId, pile::PileId, usize),
+    Reveal(pile::PileId),
+}
 
-    fn apply(&mut self, action: Action) {
-        match action {
-            Self::Action::Deal(target_pile_id) => {
-                let dealt_card = self.stock.take_top();
-                self.pile_mut(target_pile_id).place(dealt_card);
+impl action::Action<Table> for Action {
+    fn apply_to(self, table: &mut Table) {
+        match self {
+            Self::Deal(target_pile_id) => {
+                let dealt_card = table.stock.take_top();
+                table.pile_mut(target_pile_id).place(dealt_card);
             }
-            Self::Action::Draw(count) => {
-                let empty = self.stock.is_empty();
+            Self::Draw(count) => {
+                let empty = table.stock.is_empty();
 
                 if empty {
-                    let replacement_cards = self.waste.take_all().flipped();
-                    self.stock.place(replacement_cards);
+                    let replacement_cards = table.waste.take_all().flipped();
+                    table.stock.place(replacement_cards);
                 } else {
-                    let drawn_cards = self.stock.take(count).flipped();
-                    self.waste.place(drawn_cards);
+                    let drawn_cards = table.stock.take(count).flipped();
+                    table.waste.place(drawn_cards);
                 }
             }
-            Self::Action::Move(source_pile_id, target_pile_id, count) => {
-                let moved_cards = self.pile_mut(source_pile_id).take(count);
-                self.pile_mut(target_pile_id).place(moved_cards);
+            Self::Move(source_pile_id, target_pile_id, count) => {
+                let moved_cards = table.pile_mut(source_pile_id).take(count);
+                table.pile_mut(target_pile_id).place(moved_cards);
             }
-            Self::Action::Reveal(target_pile_id) => {
-                self.pile_mut(target_pile_id)
+            Self::Reveal(target_pile_id) => {
+                table
+                    .pile_mut(target_pile_id)
                     .flip_top_to(card::Facing::FaceUp);
             }
         }

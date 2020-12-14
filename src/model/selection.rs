@@ -2,15 +2,6 @@ use super::action;
 use super::pile;
 
 #[derive(Debug, Copy, Clone)]
-pub enum Action {
-    Cancel,
-    Replace(pile::PileId, usize),
-    Resize(usize),
-    Move(pile::PileId),
-    Place,
-}
-
-#[derive(Debug, Copy, Clone)]
 enum State {
     Held {
         source: pile::PileId,
@@ -73,42 +64,49 @@ impl Selection {
     }
 }
 
-impl action::Actionable for Selection {
-    type Action = Action;
-
-    fn apply(&mut self, action: Self::Action) {
-        match action {
-            Self::Action::Cancel => {
-                if let Some(source) = self.state.source() {
-                    self.target = source;
-                }
-
-                self.state = State::Visual;
-            }
-            Self::Action::Replace(new_source, count) => {
-                // First set the new size, in case we're told to hold zero cards.
-                self.state.resize(count, self.target);
-
-                // Then, if we're holding cards, override the source.
-                if let State::Held { ref mut source, .. } = self.state {
-                    *source = new_source;
-                }
-            }
-            Self::Action::Resize(count) => {
-                self.state = self.state.resize(count, self.target);
-            }
-            Self::Action::Move(target) => {
-                self.target = target;
-            }
-            Self::Action::Place => {
-                self.state = State::Visual;
-            }
-        }
-    }
-}
-
 impl Default for Selection {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+#[derive(Debug, Copy, Clone)]
+pub enum Action {
+    Cancel,
+    Replace(pile::PileId, usize),
+    Resize(usize),
+    Move(pile::PileId),
+    Place,
+}
+
+impl action::Action<Selection> for Action {
+    fn apply_to(self, selection: &mut Selection) {
+        match self {
+            Self::Cancel => {
+                if let Some(source) = selection.state.source() {
+                    selection.target = source;
+                }
+
+                selection.state = State::Visual;
+            }
+            Self::Replace(new_source, count) => {
+                // First set the new size, in case we're told to hold zero cards.
+                selection.state.resize(count, selection.target);
+
+                // Then, if we're holding cards, override the source.
+                if let State::Held { ref mut source, .. } = selection.state {
+                    *source = new_source;
+                }
+            }
+            Self::Resize(count) => {
+                selection.state = selection.state.resize(count, selection.target);
+            }
+            Self::Move(target) => {
+                selection.target = target;
+            }
+            Self::Place => {
+                selection.state = State::Visual;
+            }
+        }
     }
 }

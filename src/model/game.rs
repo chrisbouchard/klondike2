@@ -1,25 +1,9 @@
 use super::action;
+use super::action::Actionable;
 use super::deck;
 use super::pile;
 use super::selection;
 use super::table;
-
-#[derive(Debug, Copy, Clone)]
-pub enum Action {
-    CancelMove,
-    // TODO: Extract Dealer from table module and refactor to use GameAction.
-    Deal(pile::PileId),
-    Draw(usize),
-    GoTo(pile::PileId),
-    PlaceMove,
-    Reveal,
-    SelectLess,
-    SelectMore,
-    SelectAll,
-    SendToFoundation,
-    Start,
-    TakeFromWaste,
-}
 
 #[derive(Debug, Clone)]
 pub struct Game {
@@ -58,54 +42,69 @@ impl Game {
     }
 }
 
-impl action::Actionable for Game {
-    type Action = Action;
+#[derive(Debug, Copy, Clone)]
+pub enum Action {
+    CancelMove,
+    // TODO: Extract Dealer from table module and refactor to use GameAction.
+    Deal(pile::PileId),
+    Draw(usize),
+    GoTo(pile::PileId),
+    PlaceMove,
+    Reveal,
+    SelectLess,
+    SelectMore,
+    SelectAll,
+    SendToFoundation,
+    Start,
+    TakeFromWaste,
+}
 
-    fn apply(&mut self, action: Action) {
-        match action {
-            Self::Action::CancelMove => {
-                self.selection.apply(selection::Action::Cancel);
+impl action::Action<Game> for Action {
+    fn apply_to(self, game: &mut Game) {
+        match self {
+            Self::CancelMove => {
+                game.selection.apply(selection::Action::Cancel);
             }
-            Self::Action::Deal(target_id) => {
-                self.table.apply(table::Action::Deal(target_id));
+            Self::Deal(target_id) => {
+                game.table.apply(table::Action::Deal(target_id));
             }
-            Self::Action::Draw(count) => {
-                self.table.apply(table::Action::Draw(count));
+            Self::Draw(count) => {
+                game.table.apply(table::Action::Draw(count));
             }
-            Self::Action::GoTo(target_id) => {
-                self.selection.apply(selection::Action::Move(target_id));
+            Self::GoTo(target_id) => {
+                game.selection.apply(selection::Action::Move(target_id));
             }
-            Self::Action::PlaceMove => {
-                let source_id = self.selection.source();
-                let target_id = self.selection.target();
+            Self::PlaceMove => {
+                let source_id = game.selection.source();
+                let target_id = game.selection.target();
 
                 if source_id != target_id {
-                    let count = self.selection.count();
-                    self.table
+                    let count = game.selection.count();
+                    game.table
                         .apply(table::Action::Move(source_id, target_id, count));
                 }
 
-                self.selection.apply(selection::Action::Place);
+                game.selection.apply(selection::Action::Place);
             }
-            Self::Action::Reveal => {
-                let target_id = self.selection.target();
-                self.table.apply(table::Action::Reveal(target_id));
+            Self::Reveal => {
+                let target_id = game.selection.target();
+                game.table.apply(table::Action::Reveal(target_id));
             }
-            Self::Action::SelectLess => {
-                let new_count = self.selection.count().saturating_sub(1);
-                self.selection.apply(selection::Action::Resize(new_count));
+            Self::SelectLess => {
+                let new_count = game.selection.count().saturating_sub(1);
+                game.selection.apply(selection::Action::Resize(new_count));
             }
-            Self::Action::SelectMore => {
-                let new_count = self.selection.count().saturating_add(1);
-                self.selection.apply(selection::Action::Resize(new_count));
+            Self::SelectMore => {
+                let new_count = game.selection.count().saturating_add(1);
+                game.selection.apply(selection::Action::Resize(new_count));
             }
-            Self::Action::SelectAll => {
-                let target_id = self.selection.target();
+            Self::SelectAll => {
+                let target_id = game.selection.target();
 
                 // Count the number of face-up cards on top of the pile. Piles iterate bottom to
                 // top. Note that we don't care whether the remaining cards are all face-down.
                 let new_count = {
-                    self.table
+                    game.table
                         .pile(target_id)
                         .iter()
                         .rev()
@@ -113,27 +112,27 @@ impl action::Actionable for Game {
                         .count()
                 };
 
-                self.selection.apply(selection::Action::Resize(new_count));
+                game.selection.apply(selection::Action::Resize(new_count));
             }
-            Self::Action::SendToFoundation => {
-                let source_id = self.selection.source();
-                let source_pile = self.table.pile(source_id);
+            Self::SendToFoundation => {
+                let source_id = game.selection.source();
+                let source_pile = game.table.pile(source_id);
 
                 if let Some(top_card) = source_pile.top_card() {
                     let suit = top_card.suit;
                     let target_id = pile::PileId::Foundation(suit);
-                    self.table
+                    game.table
                         .apply(table::Action::Move(source_id, target_id, 1));
                 }
 
-                self.selection.apply(selection::Action::Cancel);
+                game.selection.apply(selection::Action::Cancel);
             }
-            Self::Action::Start => {
-                self.started = true;
+            Self::Start => {
+                game.started = true;
             }
-            Self::Action::TakeFromWaste => {
+            Self::TakeFromWaste => {
                 // This implicitly cancels the existing selection (if any).
-                self.selection
+                game.selection
                     .apply(selection::Action::Replace(pile::PileId::Waste, 1));
             }
         }

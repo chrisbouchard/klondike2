@@ -1,11 +1,13 @@
-pub trait Actionable {
-    type Action;
+pub trait Action<T> {
+    fn apply_to(self, target: &mut T);
+}
 
-    fn apply(&mut self, action: Self::Action);
+pub trait Actionable<A> {
+    fn apply(&mut self, action: A);
 
     fn apply_all<I>(&mut self, actions: I)
     where
-        I: IntoIterator<Item = Self::Action>,
+        I: IntoIterator<Item = A>,
     {
         for action in actions {
             self.apply(action);
@@ -13,24 +15,11 @@ pub trait Actionable {
     }
 }
 
-impl<T> Actionable for dyn AsMut<T>
+impl<A, T> Actionable<A> for T
 where
-    T: Actionable,
+    A: Action<T>,
 {
-    type Action = T::Action;
-
-    fn apply(&mut self, action: Self::Action) {
-        self.as_mut().apply(action);
-    }
-
-    fn apply_all<I>(&mut self, actions: I)
-    where
-        I: IntoIterator<Item = Self::Action>,
-    {
-        let target = self.as_mut();
-
-        for action in actions {
-            target.apply(action);
-        }
+    fn apply(&mut self, action: A) {
+        action.apply_to(self);
     }
 }
