@@ -51,6 +51,7 @@ pub enum Action {
     GoTo(pile::PileId),
     PlaceMove,
     Reveal,
+    RevealAt(pile::PileId),
     SelectLess,
     SelectMore,
     SelectAll,
@@ -88,6 +89,9 @@ impl action::Action<Game> for Action {
             }
             Self::Reveal => {
                 let target_id = game.selection.target();
+                game.table.apply(table::Action::Reveal(target_id));
+            }
+            Self::RevealAt(target_id) => {
                 game.table.apply(table::Action::Reveal(target_id));
             }
             Self::SelectLess => {
