@@ -72,24 +72,19 @@ impl Default for Selection {
 
 #[derive(Debug, Copy, Clone)]
 pub enum Action {
-    Cancel,
-    Replace(pile::PileId, usize),
+    GoTo(pile::PileId),
+    Hold(pile::PileId, usize),
     Resize(usize),
-    Move(pile::PileId),
-    Place,
+    Return,
 }
 
 impl action::Action<Selection> for Action {
     fn apply_to(self, selection: &mut Selection) {
         match self {
-            Self::Cancel => {
-                if let Some(source) = selection.state.source() {
-                    selection.target = source;
-                }
-
-                selection.state = State::Visual;
+            Self::GoTo(target) => {
+                selection.target = target;
             }
-            Self::Replace(new_source, count) => {
+            Self::Hold(new_source, count) => {
                 // First set the new size, in case we're told to hold zero cards.
                 selection.state.resize(count, selection.target);
 
@@ -101,10 +96,11 @@ impl action::Action<Selection> for Action {
             Self::Resize(count) => {
                 selection.state = selection.state.resize(count, selection.target);
             }
-            Self::Move(target) => {
-                selection.target = target;
-            }
-            Self::Place => {
+            Self::Return => {
+                if let Some(source) = selection.state.source() {
+                    selection.target = source;
+                }
+
                 selection.state = State::Visual;
             }
         }

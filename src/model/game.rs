@@ -64,7 +64,7 @@ impl action::Action<Game> for Action {
     fn apply_to(self, game: &mut Game) {
         match self {
             Self::CancelMove => {
-                game.selection.apply(selection::Action::Cancel);
+                game.selection.apply(selection::Action::Return);
             }
             Self::Deal(target_id) => {
                 game.table.apply(table::Action::Deal(target_id));
@@ -73,7 +73,7 @@ impl action::Action<Game> for Action {
                 game.table.apply(table::Action::Draw(count));
             }
             Self::GoTo(target_id) => {
-                game.selection.apply(selection::Action::Move(target_id));
+                game.selection.apply(selection::Action::GoTo(target_id));
             }
             Self::PlaceMove => {
                 let source_id = game.selection.source();
@@ -85,7 +85,7 @@ impl action::Action<Game> for Action {
                         .apply(table::Action::Move(source_id, target_id, count));
                 }
 
-                game.selection.apply(selection::Action::Place);
+                game.selection.apply(selection::Action::Resize(0));
             }
             Self::Reveal => {
                 let target_id = game.selection.target();
@@ -129,7 +129,8 @@ impl action::Action<Game> for Action {
                         .apply(table::Action::Move(source_id, target_id, 1));
                 }
 
-                game.selection.apply(selection::Action::Cancel);
+                let new_count = game.selection.count().saturating_sub(1);
+                game.selection.apply(selection::Action::Resize(new_count));
             }
             Self::Start => {
                 game.started = true;
@@ -137,7 +138,7 @@ impl action::Action<Game> for Action {
             Self::TakeFromWaste => {
                 // This implicitly cancels the existing selection (if any).
                 game.selection
-                    .apply(selection::Action::Replace(pile::PileId::Waste, 1));
+                    .apply(selection::Action::Hold(pile::PileId::Waste, 1));
             }
         }
     }
