@@ -23,3 +23,12 @@ where
         action.apply_to(self);
     }
 }
+
+impl<A, T> Actionable<A> for dyn AsMut<T>
+where
+    T: Actionable<A>,
+{
+    fn apply(&mut self, action: A) {
+        self.as_mut().apply(action);
+    }
+}
