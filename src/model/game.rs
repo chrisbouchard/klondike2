@@ -1,44 +1,50 @@
 use super::action;
-use super::action::Actionable;
 use super::deck;
 use super::pile;
 use super::selection;
 use super::table;
 
 #[derive(Debug, Clone)]
-pub struct Game {
-    table: table::Table,
-    selection: selection::Selection,
+pub struct Game<T, S> {
+    table: T,
+    selection: S,
     started: bool,
 }
 
-impl Game {
-    pub fn with_deck(deck: deck::Deck) -> Self {
-        Self {
-            table: table::Table::with_stock(deck),
-            selection: selection::Selection::new(),
-            started: false,
-        }
-    }
-
-    pub fn table(&self) -> &table::Table {
+impl<T, S> Game<T, S> {
+    pub fn table(&self) -> &T {
         &self.table
     }
 
-    pub fn table_mut(&mut self) -> &mut table::Table {
+    pub fn table_mut(&mut self) -> &mut T {
         &mut self.table
     }
 
-    pub fn selection(&self) -> &selection::Selection {
+    pub fn selection(&self) -> &S {
         &self.selection
     }
 
-    pub fn selection_mut(&mut self) -> &mut selection::Selection {
+    pub fn selection_mut(&mut self) -> &mut S {
         &mut self.selection
     }
 
     pub fn is_started(&self) -> bool {
         self.started
+    }
+}
+
+impl<T, S> Game<T, S>
+where
+    T: From<table::Table>,
+    S: From<selection::Selection>,
+{
+    // TODO: Possibly replace with a builder
+    pub fn with_deck(deck: deck::Deck) -> Self {
+        Self {
+            table: T::from(table::Table::with_stock(deck)),
+            selection: S::from(selection::Selection::new()),
+            started: false,
+        }
     }
 }
 
@@ -60,8 +66,12 @@ pub enum Action {
     TakeFromWaste,
 }
 
-impl action::Action<Game> for Action {
-    fn apply_to(self, game: &mut Game) {
+impl<T, S> action::Action<Game<T, S>> for Action
+where
+    T: action::Actionable<table::Action> + AsRef<table::Table>,
+    S: action::Actionable<selection::Action> + AsRef<selection::Selection>,
+{
+    fn apply_to(self, game: &mut Game<T, S>) {
         match self {
             Self::CancelMove => {
                 game.selection.apply(selection::Action::Return);
@@ -76,11 +86,11 @@ impl action::Action<Game> for Action {
                 game.selection.apply(selection::Action::GoTo(target_id));
             }
             Self::PlaceMove => {
-                let source_id = game.selection.source();
-                let target_id = game.selection.target();
+                let source_id = game.selection.as_ref().source();
+                let target_id = game.selection.as_ref().target();
 
                 if source_id != target_id {
-                    let count = game.selection.count();
+                    let count = game.selection.as_ref().count();
                     game.table
                         .apply(table::Action::Move(source_id, target_id, count));
                 }
@@ -88,27 +98,28 @@ impl action::Action<Game> for Action {
                 game.selection.apply(selection::Action::Resize(0));
             }
             Self::Reveal => {
-                let target_id = game.selection.target();
+                let target_id = game.selection.as_ref().target();
                 game.table.apply(table::Action::Reveal(target_id));
             }
             Self::RevealAt(target_id) => {
                 game.table.apply(table::Action::Reveal(target_id));
             }
             Self::SelectLess => {
-                let new_count = game.selection.count().saturating_sub(1);
+                let new_count = game.selection.as_ref().count().saturating_sub(1);
                 game.selection.apply(selection::Action::Resize(new_count));
             }
             Self::SelectMore => {
-                let new_count = game.selection.count().saturating_add(1);
+                let new_count = game.selection.as_ref().count().saturating_add(1);
                 game.selection.apply(selection::Action::Resize(new_count));
             }
             Self::SelectAll => {
-                let target_id = game.selection.target();
+                let target_id = game.selection.as_ref().target();
 
                 // Count the number of face-up cards on top of the pile. Piles iterate bottom to
                 // top. Note that we don't care whether the remaining cards are all face-down.
                 let new_count = {
                     game.table
+                        .as_ref()
                         .pile(target_id)
                         .iter()
                         .rev()
@@ -119,8 +130,8 @@ impl action::Action<Game> for Action {
                 game.selection.apply(selection::Action::Resize(new_count));
             }
             Self::SendToFoundation => {
-                let source_id = game.selection.source();
-                let source_pile = game.table.pile(source_id);
+                let source_id = game.selection.as_ref().source();
+                let source_pile = game.table.as_ref().pile(source_id);
 
                 if let Some(top_card) = source_pile.top_card() {
                     let suit = top_card.suit;
@@ -129,7 +140,7 @@ impl action::Action<Game> for Action {
                         .apply(table::Action::Move(source_id, target_id, 1));
                 }
 
-                let new_count = game.selection.count().saturating_sub(1);
+                let new_count = game.selection.as_ref().count().saturating_sub(1);
                 game.selection.apply(selection::Action::Resize(new_count));
             }
             Self::Start => {
