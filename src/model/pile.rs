@@ -3,12 +3,12 @@ use std::mem;
 use std::slice;
 use std::vec;
 
-use enum_iterator::IntoEnumIterator;
-use itertools::Itertools;
+use enum_iterator::IntoEnumIterator as _;
+use itertools::Itertools as _;
 
 use super::card;
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum PileId {
     Stock,
     Waste,

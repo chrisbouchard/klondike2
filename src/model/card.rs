@@ -1,12 +1,10 @@
-use enum_iterator::IntoEnumIterator;
-
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum Color {
     Black,
     Red,
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum Facing {
     FaceDown,
     FaceUp,
@@ -23,7 +21,7 @@ impl Facing {
 
 /// Enum representing the valid ranks for a card. The values for cards are a fixed set, so we use
 /// an enum rather than a dumb wrapper around `u8`.
-#[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, IntoEnumIterator)]
+#[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, enum_iterator::IntoEnumIterator)]
 pub enum Rank {
     Ace,
     Two,
@@ -40,7 +38,7 @@ pub enum Rank {
     King,
 }
 
-#[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, IntoEnumIterator)]
+#[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, enum_iterator::IntoEnumIterator)]
 pub enum Suit {
     Spades,
     Hearts,
