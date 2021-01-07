@@ -69,8 +69,9 @@ pub enum Action {
     Reveal(pile::PileId),
 }
 
-impl action::Action<Table> for Action {
-    fn apply_to(self, table: &mut Table) {
+// TODO: Use Action<Table, !> once RFC 1216 is stabilized (rust-lang/rust#35121).
+impl action::Action<Table, ()> for Action {
+    fn apply_to(self, table: &mut Table) -> action::Result<()> {
         match self {
             Self::Deal(target_pile_id) => {
                 let dealt_card = table.stock.take_top();
@@ -97,5 +98,7 @@ impl action::Action<Table> for Action {
                     .flip_top_to(card::Facing::FaceUp);
             }
         }
+
+        Ok(())
     }
 }

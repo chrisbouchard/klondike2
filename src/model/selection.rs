@@ -78,8 +78,9 @@ pub enum Action {
     Return,
 }
 
-impl action::Action<Selection> for Action {
-    fn apply_to(self, selection: &mut Selection) {
+// TODO: Use Action<Table, !> once RFC 1216 is stabilized (rust-lang/rust#35121).
+impl action::Action<Selection, ()> for Action {
+    fn apply_to(self, selection: &mut Selection) -> action::Result<()> {
         match self {
             Self::GoTo(target) => {
                 selection.target = target;
@@ -104,5 +105,7 @@ impl action::Action<Selection> for Action {
                 selection.state = State::Visual;
             }
         }
+
+        Ok(())
     }
 }

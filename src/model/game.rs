@@ -66,24 +66,24 @@ pub enum Action {
     TakeFromWaste,
 }
 
-impl<T, S> action::Action<Game<T, S>> for Action
+impl<T, S> action::Action<Game<T, S>, ()> for Action
 where
-    T: action::Actionable<table::Action> + AsRef<table::Table>,
-    S: action::Actionable<selection::Action> + AsRef<selection::Selection>,
+    T: action::Actionable<table::Action, ()> + AsRef<table::Table>,
+    S: action::Actionable<selection::Action, ()> + AsRef<selection::Selection>,
 {
-    fn apply_to(self, game: &mut Game<T, S>) {
+    fn apply_to(self, game: &mut Game<T, S>) -> action::Result<()> {
         match self {
             Self::CancelMove => {
-                game.selection.apply(selection::Action::Return);
+                game.selection.apply(selection::Action::Return)?;
             }
             Self::Deal(target_id) => {
-                game.table.apply(table::Action::Deal(target_id));
+                game.table.apply(table::Action::Deal(target_id))?;
             }
             Self::Draw(count) => {
-                game.table.apply(table::Action::Draw(count));
+                game.table.apply(table::Action::Draw(count))?;
             }
             Self::GoTo(target_id) => {
-                game.selection.apply(selection::Action::GoTo(target_id));
+                game.selection.apply(selection::Action::GoTo(target_id))?;
             }
             Self::PlaceMove => {
                 let source_id = game.selection.as_ref().source();
@@ -92,25 +92,25 @@ where
                 if source_id != target_id {
                     let count = game.selection.as_ref().count();
                     game.table
-                        .apply(table::Action::Move(source_id, target_id, count));
+                        .apply(table::Action::Move(source_id, target_id, count))?;
                 }
 
-                game.selection.apply(selection::Action::Resize(0));
+                game.selection.apply(selection::Action::Resize(0))?;
             }
             Self::Reveal => {
                 let target_id = game.selection.as_ref().target();
-                game.table.apply(table::Action::Reveal(target_id));
+                game.table.apply(table::Action::Reveal(target_id))?;
             }
             Self::RevealAt(target_id) => {
-                game.table.apply(table::Action::Reveal(target_id));
+                game.table.apply(table::Action::Reveal(target_id))?;
             }
             Self::SelectLess => {
                 let new_count = game.selection.as_ref().count().saturating_sub(1);
-                game.selection.apply(selection::Action::Resize(new_count));
+                game.selection.apply(selection::Action::Resize(new_count))?;
             }
             Self::SelectMore => {
                 let new_count = game.selection.as_ref().count().saturating_add(1);
-                game.selection.apply(selection::Action::Resize(new_count));
+                game.selection.apply(selection::Action::Resize(new_count))?;
             }
             Self::SelectAll => {
                 let target_id = game.selection.as_ref().target();
@@ -127,7 +127,7 @@ where
                         .count()
                 };
 
-                game.selection.apply(selection::Action::Resize(new_count));
+                game.selection.apply(selection::Action::Resize(new_count))?;
             }
             Self::SendToFoundation => {
                 let source_id = game.selection.as_ref().source();
@@ -141,7 +141,7 @@ where
                 }
 
                 let new_count = game.selection.as_ref().count().saturating_sub(1);
-                game.selection.apply(selection::Action::Resize(new_count));
+                game.selection.apply(selection::Action::Resize(new_count))?;
             }
             Self::Start => {
                 game.started = true;
@@ -149,8 +149,10 @@ where
             Self::TakeFromWaste => {
                 // This implicitly cancels the existing selection (if any).
                 game.selection
-                    .apply(selection::Action::Hold(pile::PileId::Waste, 1));
+                    .apply(selection::Action::Hold(pile::PileId::Waste, 1))?;
             }
         }
+
+        Ok(())
     }
 }
