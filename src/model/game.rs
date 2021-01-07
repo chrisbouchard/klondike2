@@ -1,3 +1,7 @@
+use std::error;
+
+use snafu::ResultExt as _;
+
 use super::action;
 use super::deck;
 use super::pile;
@@ -65,26 +69,46 @@ pub enum Action {
     TakeFromWaste,
 }
 
+#[derive(Debug, snafu::Snafu)]
+pub enum Error<T, S>
+where
+    T: error::Error + 'static,
+    S: error::Error + 'static,
+{
+    TableError { source: T, action: Action },
+    SelectionError { source: S, action: Action },
+}
+
 impl<T, S> action::Action<Game<T, S>> for Action
 where
-    T: action::Actionable<table::Action, Error = ()> + AsRef<table::Table>,
-    S: action::Actionable<selection::Action, Error = ()> + AsRef<selection::Selection>,
+    T: action::Actionable<table::Action> + AsRef<table::Table>,
+    S: action::Actionable<selection::Action> + AsRef<selection::Selection>,
+    T::Error: error::Error + 'static,
+    S::Error: error::Error + 'static,
 {
-    type Error = ();
+    type Error = Error<T::Error, S::Error>;
 
     fn apply_to(self, game: &mut Game<T, S>) -> action::Result<Self::Error> {
         match self {
             Self::CancelMove => {
-                game.selection.apply(selection::Action::Return)?;
+                game.selection
+                    .apply(selection::Action::Return)
+                    .context(SelectionError { action: self })?;
             }
             Self::Deal(target_id) => {
-                game.table.apply(table::Action::Deal(target_id))?;
+                game.table
+                    .apply(table::Action::Deal(target_id))
+                    .context(TableError { action: self })?;
             }
             Self::Draw(count) => {
-                game.table.apply(table::Action::Draw(count))?;
+                game.table
+                    .apply(table::Action::Draw(count))
+                    .context(TableError { action: self })?;
             }
             Self::GoTo(target_id) => {
-                game.selection.apply(selection::Action::GoTo(target_id))?;
+                game.selection
+                    .apply(selection::Action::GoTo(target_id))
+                    .context(SelectionError { action: self })?;
             }
             Self::PlaceMove => {
                 let source_id = game.selection.as_ref().source();
@@ -93,25 +117,36 @@ where
                 if source_id != target_id {
                     let count = game.selection.as_ref().count();
                     game.table
-                        .apply(table::Action::Move(source_id, target_id, count))?;
+                        .apply(table::Action::Move(source_id, target_id, count))
+                        .context(TableError { action: self })?;
                 }
 
-                game.selection.apply(selection::Action::Resize(0))?;
+                game.selection
+                    .apply(selection::Action::Resize(0))
+                    .context(SelectionError { action: self })?;
             }
             Self::Reveal => {
                 let target_id = game.selection.as_ref().target();
-                game.table.apply(table::Action::Reveal(target_id))?;
+                game.table
+                    .apply(table::Action::Reveal(target_id))
+                    .context(TableError { action: self })?;
             }
             Self::RevealAt(target_id) => {
-                game.table.apply(table::Action::Reveal(target_id))?;
+                game.table
+                    .apply(table::Action::Reveal(target_id))
+                    .context(TableError { action: self })?;
             }
             Self::SelectLess => {
                 let new_count = game.selection.as_ref().count().saturating_sub(1);
-                game.selection.apply(selection::Action::Resize(new_count))?;
+                game.selection
+                    .apply(selection::Action::Resize(new_count))
+                    .context(SelectionError { action: self })?;
             }
             Self::SelectMore => {
                 let new_count = game.selection.as_ref().count().saturating_add(1);
-                game.selection.apply(selection::Action::Resize(new_count))?;
+                game.selection
+                    .apply(selection::Action::Resize(new_count))
+                    .context(SelectionError { action: self })?;
             }
             Self::SelectAll => {
                 let target_id = game.selection.as_ref().target();
@@ -128,7 +163,9 @@ where
                         .count()
                 };
 
-                game.selection.apply(selection::Action::Resize(new_count))?;
+                game.selection
+                    .apply(selection::Action::Resize(new_count))
+                    .context(SelectionError { action: self })?;
             }
             Self::SendToFoundation => {
                 let source_id = game.selection.as_ref().source();
@@ -138,11 +175,14 @@ where
                     let suit = top_card.suit;
                     let target_id = pile::PileId::Foundation(suit);
                     game.table
-                        .apply(table::Action::Move(source_id, target_id, 1));
+                        .apply(table::Action::Move(source_id, target_id, 1))
+                        .context(TableError { action: self })?;
                 }
 
                 let new_count = game.selection.as_ref().count().saturating_sub(1);
-                game.selection.apply(selection::Action::Resize(new_count))?;
+                game.selection
+                    .apply(selection::Action::Resize(new_count))
+                    .context(SelectionError { action: self })?;
             }
             Self::Start => {
                 game.started = true;
@@ -150,7 +190,8 @@ where
             Self::TakeFromWaste => {
                 // This implicitly cancels the existing selection (if any).
                 game.selection
-                    .apply(selection::Action::Hold(pile::PileId::Waste, 1))?;
+                    .apply(selection::Action::Hold(pile::PileId::Waste, 1))
+                    .context(SelectionError { action: self })?;
             }
         }
 
