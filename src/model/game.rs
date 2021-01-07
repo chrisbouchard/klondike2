@@ -51,7 +51,6 @@ where
 #[derive(Debug, Copy, Clone)]
 pub enum Action {
     CancelMove,
-    // TODO: Extract Dealer from table module and refactor to use GameAction.
     Deal(pile::PileId),
     Draw(usize),
     GoTo(pile::PileId),
