@@ -65,12 +65,14 @@ pub enum Action {
     TakeFromWaste,
 }
 
-impl<T, S> action::Action<Game<T, S>, ()> for Action
+impl<T, S> action::Action<Game<T, S>> for Action
 where
-    T: action::Actionable<table::Action, ()> + AsRef<table::Table>,
-    S: action::Actionable<selection::Action, ()> + AsRef<selection::Selection>,
+    T: action::Actionable<table::Action, Error = ()> + AsRef<table::Table>,
+    S: action::Actionable<selection::Action, Error = ()> + AsRef<selection::Selection>,
 {
-    fn apply_to(self, game: &mut Game<T, S>) -> action::Result<()> {
+    type Error = ();
+
+    fn apply_to(self, game: &mut Game<T, S>) -> action::Result<Self::Error> {
         match self {
             Self::CancelMove => {
                 game.selection.apply(selection::Action::Return)?;

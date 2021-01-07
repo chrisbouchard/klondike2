@@ -69,9 +69,11 @@ pub enum Action {
     Reveal(pile::PileId),
 }
 
-// TODO: Use Action<Table, !> once RFC 1216 is stabilized (rust-lang/rust#35121).
-impl action::Action<Table, ()> for Action {
-    fn apply_to(self, table: &mut Table) -> action::Result<()> {
+impl action::Action<Table> for Action {
+    // TODO: Use Err = ! once RFC 1216 is stabilized (rust-lang/rust#35121).
+    type Error = ();
+
+    fn apply_to(self, table: &mut Table) -> action::Result<Self::Error> {
         match self {
             Self::Deal(target_pile_id) => {
                 let dealt_card = table.stock.take_top();

@@ -3,36 +3,44 @@ use std::sync::Arc;
 
 pub type Result<E> = std::result::Result<(), E>;
 
-pub trait Action<T, E> {
-    fn apply_to(self, target: &mut T) -> Result<E>;
+pub trait Action<T> {
+    type Error;
+
+    fn apply_to(self, target: &mut T) -> Result<Self::Error>;
 }
 
-impl<A, T, E> Action<Rc<T>, E> for A
+impl<A, T> Action<Rc<T>> for A
 where
-    A: Action<T, E>,
+    A: Action<T>,
     T: Clone,
 {
-    fn apply_to(self, target: &mut Rc<T>) -> Result<E> {
+    type Error = A::Error;
+
+    fn apply_to(self, target: &mut Rc<T>) -> Result<Self::Error> {
         let inner_target = Rc::make_mut(target);
         self.apply_to(inner_target)
     }
 }
 
-impl<A, T, E> Action<Arc<T>, E> for A
+impl<A, T> Action<Arc<T>> for A
 where
-    A: Action<T, E>,
+    A: Action<T>,
     T: Clone,
 {
-    fn apply_to(self, target: &mut Arc<T>) -> Result<E> {
+    type Error = A::Error;
+
+    fn apply_to(self, target: &mut Arc<T>) -> Result<Self::Error> {
         let inner_target = Arc::make_mut(target);
         self.apply_to(inner_target)
     }
 }
 
-pub trait Actionable<A, E> {
-    fn apply(&mut self, action: A) -> Result<E>;
+pub trait Actionable<A> {
+    type Error;
 
-    fn apply_all<I>(&mut self, actions: I) -> Result<E>
+    fn apply(&mut self, action: A) -> Result<Self::Error>;
+
+    fn apply_all<I>(&mut self, actions: I) -> Result<Self::Error>
     where
         I: IntoIterator<Item = A>,
     {
@@ -43,11 +51,13 @@ pub trait Actionable<A, E> {
     }
 }
 
-impl<A, T, E> Actionable<A, E> for T
+impl<A, T> Actionable<A> for T
 where
-    A: Action<T, E>,
+    A: Action<Self>,
 {
-    fn apply(&mut self, action: A) -> Result<E> {
+    type Error = A::Error;
+
+    fn apply(&mut self, action: A) -> Result<Self::Error> {
         action.apply_to(self)
     }
 }
