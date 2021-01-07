@@ -83,7 +83,7 @@ impl action::Action<Selection> for Action {
     // TODO: Use Err = ! once RFC 1216 is stabilized (rust-lang/rust#35121).
     type Error = ();
 
-    fn apply_to(self, selection: &mut Selection) -> action::Result<Self::Error> {
+    fn apply_to(self, selection: &mut Selection) -> Result<(), Self::Error> {
         match self {
             Self::GoTo(target) => {
                 selection.target = target;

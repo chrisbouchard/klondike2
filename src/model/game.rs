@@ -88,7 +88,7 @@ where
 {
     type Error = Error<T::Error, S::Error>;
 
-    fn apply_to(self, game: &mut Game<T, S>) -> action::Result<Self::Error> {
+    fn apply_to(self, game: &mut Game<T, S>) -> Result<(), Self::Error> {
         match self {
             Self::CancelMove => {
                 game.selection
