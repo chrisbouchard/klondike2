@@ -107,3 +107,94 @@ impl action::Action<Table> for Action {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use enum_iterator::IntoEnumIterator as _;
+    use itertools::Itertools as _;
+
+    use super::*;
+
+    #[test]
+    fn with_stock_should_not_panic() {
+        Table::with_stock(full_test_stock());
+    }
+
+    #[test]
+    fn with_empty_stock_should_not_panic() {
+        Table::with_stock(std::iter::empty());
+    }
+
+    #[test]
+    fn with_stock_should_create_empty_waste() {
+        let table = Table::with_stock(full_test_stock());
+        assert!(
+            table.pile(pile::PileId::Waste).is_empty(),
+            "Waste is not empty"
+        );
+    }
+
+    #[test]
+    fn with_stock_should_create_empty_spades_foundation() {
+        let table = Table::with_stock(full_test_stock());
+        assert!(
+            table
+                .pile(pile::PileId::Foundation(card::Suit::Spades))
+                .is_empty(),
+            "Spades foundation is not empty"
+        );
+    }
+
+    #[test]
+    fn with_stock_should_create_empty_hearts_foundation() {
+        let table = Table::with_stock(full_test_stock());
+        assert!(
+            table
+                .pile(pile::PileId::Foundation(card::Suit::Hearts))
+                .is_empty(),
+            "Hearts foundation is not empty"
+        );
+    }
+
+    #[test]
+    fn with_stock_should_create_empty_diamonds_foundation() {
+        let table = Table::with_stock(full_test_stock());
+        assert!(
+            table
+                .pile(pile::PileId::Foundation(card::Suit::Diamonds))
+                .is_empty(),
+            "Diamonds foundation is not empty"
+        );
+    }
+
+    #[test]
+    fn with_stock_should_create_empty_clubs_foundation() {
+        let table = Table::with_stock(full_test_stock());
+        assert!(
+            table
+                .pile(pile::PileId::Foundation(card::Suit::Clubs))
+                .is_empty(),
+            "Clubs foundation is not empty"
+        );
+    }
+
+    #[test]
+    fn with_stock_should_create_empty_tableaux() {
+        let table = Table::with_stock(full_test_stock());
+        assert!(
+            table.pile(pile::PileId::Tableaux(0)).is_empty(),
+            "Tableaux is not empty"
+        );
+    }
+
+    fn full_test_stock() -> Vec<card::Card> {
+        card::Suit::into_enum_iter()
+            .cartesian_product(card::Rank::into_enum_iter())
+            .map(|(suit, rank)| card::Card {
+                suit,
+                rank,
+                facing: card::Facing::FaceDown,
+            })
+            .collect_vec()
+    }
+}
