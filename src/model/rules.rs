@@ -53,12 +53,15 @@ where
         target
             .rules
             .check_rules(&target.inner, &self)
-            .context(Invalid { action: self })
-            .and_then(|()| {
-                target
-                    .inner
-                    .apply(self)
-                    .context(Underlying { action: self })
-            })
+            .context(Invalid {
+                action: self.clone(),
+            })?;
+
+        // Make a clone so we have the original to return in case of an error.
+        let clone = self.clone();
+        target
+            .inner
+            .apply(clone)
+            .context(Underlying { action: self })
     }
 }

@@ -3,7 +3,7 @@ use std::fmt;
 use std::rc::Rc;
 use std::sync::Arc;
 
-pub trait Action<T>: Copy + fmt::Debug {
+pub trait Action<T>: Clone + fmt::Debug {
     type Error: error::Error + 'static;
 
     fn apply_to(self, target: &mut T) -> Result<(), Self::Error>;
