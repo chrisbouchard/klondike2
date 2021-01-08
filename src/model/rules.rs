@@ -22,9 +22,23 @@ where
     Underlying { source: U, action: A },
 }
 
+#[derive(Debug, Clone)]
 pub struct RulesGuard<R, T> {
     rules: R,
     inner: T,
+}
+
+impl<R, T> Default for RulesGuard<R, T>
+where
+    R: Default,
+    T: Default,
+{
+    fn default() -> Self {
+        RulesGuard {
+            rules: Default::default(),
+            inner: Default::default(),
+        }
+    }
 }
 
 impl<R, T, A> action::Action<RulesGuard<R, T>> for A
@@ -40,7 +54,11 @@ where
             .rules
             .check_rules(&target.inner, &self)
             .context(Invalid { action: self })
-            .and_then(|_| target.inner.apply(self))
-            .context(Underlying { action: self })
+            .and_then(|()| {
+                target
+                    .inner
+                    .apply(self)
+                    .context(Underlying { action: self })
+            })
     }
 }
