@@ -11,6 +11,7 @@ repository = "http://github.com/chrisbouchard/klondike2"
 readme = "README.md"
 
 [dependencies]
+derive_more = "0.99"
 enum-iterator = "0.6"
 itertools = "0.9"
 num-traits = "0.2"

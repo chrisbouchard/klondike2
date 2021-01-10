@@ -1,8 +1,8 @@
 use std::vec;
 
-use enum_iterator::IntoEnumIterator;
-use itertools::Itertools;
-use rand::seq::SliceRandom;
+use enum_iterator::IntoEnumIterator as _;
+use itertools::Itertools as _;
+use rand::seq::SliceRandom as _;
 
 use super::card;
 
@@ -35,8 +35,7 @@ impl Deck {
         let cards = card::Suit::into_enum_iter()
             .cartesian_product(card::Rank::into_enum_iter())
             .map(|(suit, rank)| card::Card {
-                suit,
-                rank,
+                face: card::CardFace { suit, rank },
                 facing: card::Facing::FaceDown,
             })
             .collect_vec();

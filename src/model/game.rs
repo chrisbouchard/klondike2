@@ -3,7 +3,7 @@ use std::error;
 use snafu::ResultExt as _;
 
 use super::action;
-use super::deck;
+use super::card;
 use super::pile;
 use super::selection;
 use super::table;
@@ -20,16 +20,8 @@ impl<T, S> Game<T, S> {
         &self.table
     }
 
-    pub fn table_mut(&mut self) -> &mut T {
-        &mut self.table
-    }
-
     pub fn selection(&self) -> &S {
         &self.selection
-    }
-
-    pub fn selection_mut(&mut self) -> &mut S {
-        &mut self.selection
     }
 
     pub fn is_started(&self) -> bool {
@@ -43,19 +35,29 @@ where
     S: From<selection::Selection>,
 {
     // TODO: Possibly replace with a builder
-    pub fn with_deck(deck: deck::Deck) -> Self {
+    pub fn new() -> Self {
         Self {
-            table: T::from(table::Table::with_stock(deck)),
+            table: T::from(table::Table::new()),
             selection: S::from(selection::Selection::new()),
             started: false,
         }
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+impl<T, S> Default for Game<T, S>
+where
+    T: From<table::Table>,
+    S: From<selection::Selection>,
+{
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[derive(Debug, Clone)]
 pub enum Action {
     CancelMove,
-    Deal(pile::PileId),
+    Deal(pile::PileId, card::Card),
     Draw(usize),
     GoTo(pile::PileId),
     PlaceMove,
@@ -66,6 +68,7 @@ pub enum Action {
     SelectAll,
     SendToFoundation,
     Start,
+    Stock(Vec<card::Card>),
     TakeFromWaste,
 }
 
@@ -95,9 +98,9 @@ where
                     .apply(selection::Action::Return)
                     .context(SelectionError { action: self })?;
             }
-            Self::Deal(target_id) => {
+            Self::Deal(target_id, ref card) => {
                 game.table
-                    .apply(table::Action::Deal(target_id))
+                    .apply(table::Action::Deal(target_id, card.clone()))
                     .context(TableError { action: self })?;
             }
             Self::Draw(count) => {
@@ -118,7 +121,9 @@ where
                     let count = game.selection.as_ref().count();
                     game.table
                         .apply(table::Action::Move(source_id, target_id, count))
-                        .context(TableError { action: self })?;
+                        .context(TableError {
+                            action: self.clone(),
+                        })?;
                 }
 
                 game.selection
@@ -172,11 +177,13 @@ where
                 let source_pile = game.table.as_ref().pile(source_id);
 
                 if let Some(top_card) = source_pile.top_card() {
-                    let suit = top_card.suit;
+                    let suit = top_card.suit();
                     let target_id = pile::PileId::Foundation(suit);
                     game.table
                         .apply(table::Action::Move(source_id, target_id, 1))
-                        .context(TableError { action: self })?;
+                        .context(TableError {
+                            action: self.clone(),
+                        })?;
                 }
 
                 let new_count = game.selection.as_ref().count().saturating_sub(1);
@@ -186,6 +193,11 @@ where
             }
             Self::Start => {
                 game.started = true;
+            }
+            Self::Stock(ref stock) => {
+                game.table
+                    .apply(table::Action::Stock(stock.clone()))
+                    .context(TableError { action: self })?;
             }
             Self::TakeFromWaste => {
                 // This implicitly cancels the existing selection (if any).

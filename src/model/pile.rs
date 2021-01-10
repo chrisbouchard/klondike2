@@ -8,11 +8,15 @@ use itertools::Itertools as _;
 
 use super::card;
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, derive_more::Display)]
 pub enum PileId {
+    #[display(fmt = "Stock")]
     Stock,
+    #[display(fmt = "Waste")]
     Waste,
+    #[display(fmt = "{} Foundation", _0)]
     Foundation(card::Suit),
+    #[display(fmt = "Tableaux {}", _0 + 1)]
     Tableaux(usize),
 }
 
@@ -36,7 +40,7 @@ impl PileId {
 pub type Iter<'a> = slice::Iter<'a, card::Card>;
 pub type IntoIter = vec::IntoIter<card::Card>;
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct Pile {
     cards: Vec<card::Card>,
 }
@@ -114,6 +118,12 @@ impl Pile {
     pub fn take_all(&mut self) -> Self {
         let cards = mem::take(&mut self.cards);
         Pile { cards }
+    }
+}
+
+impl Default for Pile {
+    fn default() -> Self {
+        Pile::new()
     }
 }
 

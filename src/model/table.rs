@@ -2,7 +2,7 @@ use super::action;
 use super::card;
 use super::pile;
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct Table {
     stock: pile::Pile,
     waste: pile::Pile,
@@ -16,13 +16,18 @@ pub struct Table {
 }
 
 impl Table {
-    pub fn with_stock<I>(stock: I) -> Self
-    where
-        I: IntoIterator<Item = card::Card>,
-    {
-        let mut table = Self::default();
-        table.stock.place_cards(stock);
-        table
+    pub const fn new() -> Self {
+        Self {
+            stock: pile::Pile::new(),
+            waste: pile::Pile::new(),
+
+            spades_foundation: pile::Pile::new(),
+            hearts_foundation: pile::Pile::new(),
+            diamonds_foundation: pile::Pile::new(),
+            clubs_foundation: pile::Pile::new(),
+
+            tableaux: Vec::new(),
+        }
     }
 
     pub fn pile(&self, pile_id: pile::PileId) -> &pile::Pile {
@@ -41,7 +46,7 @@ impl Table {
         }
     }
 
-    pub fn pile_mut(&mut self, pile_id: pile::PileId) -> &mut pile::Pile {
+    fn pile_mut(&mut self, pile_id: pile::PileId) -> &mut pile::Pile {
         match pile_id {
             pile::PileId::Stock => &mut self.stock,
             pile::PileId::Waste => &mut self.waste,
@@ -61,12 +66,19 @@ impl Table {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+impl Default for Table {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[derive(Debug, Clone)]
 pub enum Action {
-    Deal(pile::PileId),
+    Deal(pile::PileId, card::Card),
     Draw(usize),
     Move(pile::PileId, pile::PileId, usize),
     Reveal(pile::PileId),
+    Stock(Vec<card::Card>),
 }
 
 #[derive(Debug, snafu::Snafu)]
@@ -78,9 +90,8 @@ impl action::Action<Table> for Action {
 
     fn apply_to(self, table: &mut Table) -> Result<(), Self::Error> {
         match self {
-            Self::Deal(target_pile_id) => {
-                let dealt_card = table.stock.take_top();
-                table.pile_mut(target_pile_id).place(dealt_card);
+            Self::Deal(target_pile_id, card) => {
+                table.pile_mut(target_pile_id).place_one(card);
             }
             Self::Draw(count) => {
                 let empty = table.stock.is_empty();
@@ -102,6 +113,9 @@ impl action::Action<Table> for Action {
                     .pile_mut(target_pile_id)
                     .flip_top_to(card::Facing::FaceUp);
             }
+            Self::Stock(stock) => {
+                table.stock.place_cards(stock);
+            }
         }
 
         Ok(())
@@ -110,24 +124,25 @@ impl action::Action<Table> for Action {
 
 #[cfg(test)]
 mod tests {
-    use enum_iterator::IntoEnumIterator as _;
-    use itertools::Itertools as _;
-
     use super::*;
 
     #[test]
-    fn with_stock_should_not_panic() {
-        Table::with_stock(full_test_stock());
+    fn new_should_not_panic() {
+        Table::new();
     }
 
     #[test]
-    fn with_empty_stock_should_not_panic() {
-        Table::with_stock(std::iter::empty());
+    fn new_should_create_empty_stock() {
+        let table = Table::new();
+        assert!(
+            table.pile(pile::PileId::Stock).is_empty(),
+            "Stock is not empty"
+        );
     }
 
     #[test]
-    fn with_stock_should_create_empty_waste() {
-        let table = Table::with_stock(full_test_stock());
+    fn new_should_create_empty_waste() {
+        let table = Table::new();
         assert!(
             table.pile(pile::PileId::Waste).is_empty(),
             "Waste is not empty"
@@ -135,8 +150,8 @@ mod tests {
     }
 
     #[test]
-    fn with_stock_should_create_empty_spades_foundation() {
-        let table = Table::with_stock(full_test_stock());
+    fn new_should_create_empty_spades_foundation() {
+        let table = Table::new();
         assert!(
             table
                 .pile(pile::PileId::Foundation(card::Suit::Spades))
@@ -146,8 +161,8 @@ mod tests {
     }
 
     #[test]
-    fn with_stock_should_create_empty_hearts_foundation() {
-        let table = Table::with_stock(full_test_stock());
+    fn new_should_create_empty_hearts_foundation() {
+        let table = Table::new();
         assert!(
             table
                 .pile(pile::PileId::Foundation(card::Suit::Hearts))
@@ -157,8 +172,8 @@ mod tests {
     }
 
     #[test]
-    fn with_stock_should_create_empty_diamonds_foundation() {
-        let table = Table::with_stock(full_test_stock());
+    fn new_should_create_empty_diamonds_foundation() {
+        let table = Table::new();
         assert!(
             table
                 .pile(pile::PileId::Foundation(card::Suit::Diamonds))
@@ -168,8 +183,8 @@ mod tests {
     }
 
     #[test]
-    fn with_stock_should_create_empty_clubs_foundation() {
-        let table = Table::with_stock(full_test_stock());
+    fn new_should_create_empty_clubs_foundation() {
+        let table = Table::new();
         assert!(
             table
                 .pile(pile::PileId::Foundation(card::Suit::Clubs))
@@ -179,22 +194,11 @@ mod tests {
     }
 
     #[test]
-    fn with_stock_should_create_empty_tableaux() {
-        let table = Table::with_stock(full_test_stock());
+    fn new_should_create_empty_tableaux() {
+        let table = Table::new();
         assert!(
             table.pile(pile::PileId::Tableaux(0)).is_empty(),
             "Tableaux is not empty"
         );
-    }
-
-    fn full_test_stock() -> Vec<card::Card> {
-        card::Suit::into_enum_iter()
-            .cartesian_product(card::Rank::into_enum_iter())
-            .map(|(suit, rank)| card::Card {
-                suit,
-                rank,
-                facing: card::Facing::FaceDown,
-            })
-            .collect_vec()
     }
 }
