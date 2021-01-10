@@ -1,6 +1,5 @@
 use std::vec;
 
-use enum_iterator::IntoEnumIterator as _;
 use itertools::Itertools as _;
 use rand::seq::SliceRandom as _;
 
@@ -32,13 +31,7 @@ pub struct Deck {
 
 impl Deck {
     pub fn new() -> Self {
-        let cards = card::Suit::into_enum_iter()
-            .cartesian_product(card::Rank::into_enum_iter())
-            .map(|(suit, rank)| card::Card {
-                face: card::CardFace { suit, rank },
-                facing: card::Facing::FaceDown,
-            })
-            .collect_vec();
+        let cards = card::Card::values_face_down().collect_vec();
         Self { cards }
     }
 

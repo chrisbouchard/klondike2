@@ -144,3 +144,68 @@ where
         action
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use assert_matches::assert_matches;
+
+    use super::*;
+
+    #[test]
+    fn dealer_state_init_with_nonempty_iterator_should_deal() {
+        let expected_card = card::Card {
+            face: card::CardFace {
+                suit: card::Suit::Spades,
+                rank: card::Rank::Ace,
+            },
+            facing: card::Facing::FaceUp,
+        };
+
+        let mut card_iter = velcro::iter![expected_card.clone()];
+        let state = DealerState::init(&mut card_iter);
+
+        assert_matches!(
+            state,
+            DealerState::Deal {
+                next_card: actual_card,
+                current_index: 0,
+                current_row: 0
+            } => {
+                assert_eq!(actual_card, expected_card);
+            }
+        );
+    }
+
+    #[test]
+    fn dealer_state_init_with_empty_iterator_should_finish() {
+        let mut card_iter = velcro::iter![];
+        let state = DealerState::init(&mut card_iter);
+        assert_matches!(state, DealerState::Done);
+    }
+
+    #[test]
+    fn dealer_state_action_with_deal_should_deal() {
+        let expected_card = card::Card {
+            face: card::CardFace {
+                suit: card::Suit::Spades,
+                rank: card::Rank::Ace,
+            },
+            facing: card::Facing::FaceUp,
+        };
+
+        let mut card_iter = velcro::iter![];
+
+        let state = DealerState::Deal {
+            next_card: expected_card.clone(),
+            current_index: 0,
+            current_row: 0,
+        };
+
+        let action = state.action(&mut card_iter);
+
+        assert_matches!(action, Some(game::Action::Deal(pile_id, actual_card)) => {
+            assert_eq!(pile_id, pile::PileId::Tableaux(0));
+            assert_eq!(actual_card, expected_card);
+        });
+    }
+}

@@ -1,3 +1,7 @@
+use std::convert;
+
+use itertools::Itertools as _;
+
 #[derive(Debug, Copy, Clone, Eq, PartialEq, derive_more::Display)]
 pub enum Color {
     #[display(fmt = "Black")]
@@ -34,8 +38,10 @@ impl Facing {
     Eq,
     PartialEq,
     derive_more::Display,
-    enum_iterator::IntoEnumIterator,
+    num_enum::IntoPrimitive,
+    num_enum::TryFromPrimitive,
 )]
+#[repr(u8)]
 pub enum Rank {
     #[display(fmt = "Ace")]
     Ace,
@@ -65,6 +71,14 @@ pub enum Rank {
     King,
 }
 
+impl Rank {
+    pub fn values() -> impl Iterator<Item = Self> + ExactSizeIterator + Clone {
+        (u8::from(Self::Ace)..=u8::from(Self::King))
+            .map(convert::TryFrom::try_from)
+            .map(Result::unwrap)
+    }
+}
+
 #[derive(
     Debug,
     Copy,
@@ -74,8 +88,10 @@ pub enum Rank {
     Eq,
     PartialEq,
     derive_more::Display,
-    enum_iterator::IntoEnumIterator,
+    num_enum::IntoPrimitive,
+    num_enum::TryFromPrimitive,
 )]
+#[repr(u8)]
 pub enum Suit {
     #[display(fmt = "Spades")]
     Spades,
@@ -93,6 +109,12 @@ impl Suit {
             Self::Spades | Self::Clubs => Color::Black,
             Self::Hearts | Self::Diamonds => Color::Red,
         }
+    }
+
+    pub fn values() -> impl Iterator<Item = Self> + ExactSizeIterator + Clone {
+        (u8::from(Self::Spades)..=u8::from(Self::Clubs))
+            .map(convert::TryFrom::try_from)
+            .map(Result::unwrap)
     }
 }
 
@@ -119,9 +141,15 @@ impl CardFace {
     pub fn with_facing(self, facing: Facing) -> Card {
         Card { face: self, facing }
     }
+
+    pub fn values() -> impl Iterator<Item = Self> {
+        Suit::values()
+            .cartesian_product(Rank::values())
+            .map(|(suit, rank)| CardFace { suit, rank })
+    }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Card {
     pub face: CardFace,
     pub facing: Facing,
@@ -163,5 +191,17 @@ impl Card {
     pub fn reversed(mut self) -> Self {
         self.reverse();
         self
+    }
+
+    pub fn values_with_facing(facing: Facing) -> impl Iterator<Item = Self> {
+        CardFace::values().map(move |face| Card { face, facing })
+    }
+
+    pub fn values_face_down() -> impl Iterator<Item = Self> {
+        Self::values_with_facing(Facing::FaceDown)
+    }
+
+    pub fn values_face_up() -> impl Iterator<Item = Self> {
+        Self::values_with_facing(Facing::FaceUp)
     }
 }

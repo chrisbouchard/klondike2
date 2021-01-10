@@ -3,7 +3,6 @@ use std::mem;
 use std::slice;
 use std::vec;
 
-use enum_iterator::IntoEnumIterator as _;
 use itertools::Itertools as _;
 
 use super::card;
@@ -25,7 +24,7 @@ impl PileId {
         velcro::iter![
             PileId::Stock,
             PileId::Waste,
-            ..card::Suit::into_enum_iter().map(PileId::Foundation)
+            ..card::Suit::values().map(PileId::Foundation)
         ]
     }
 

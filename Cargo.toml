@@ -11,10 +11,10 @@ repository = "http://github.com/chrisbouchard/klondike2"
 readme = "README.md"
 
 [dependencies]
+assert_matches = "1.4"
 derive_more = "0.99"
-enum-iterator = "0.6"
 itertools = "0.9"
-num-traits = "0.2"
+num_enum = "0.5"
 rand = "0.7"
 snafu = "0.6"
 termion = "1.5"
