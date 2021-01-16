@@ -21,6 +21,9 @@ termion = "1.5"
 tui = "0.13"
 velcro = "0.4"
 
+[dev-dependencies]
+test-case = "1.1"
+
 [lib]
 name = "klondike2_lib"
 path = "src/lib.rs"

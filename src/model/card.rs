@@ -72,6 +72,10 @@ pub enum Rank {
 }
 
 impl Rank {
+    pub fn of(self, suit: Suit) -> CardFace {
+        CardFace { rank: self, suit }
+    }
+
     pub fn values() -> impl Iterator<Item = Self> + ExactSizeIterator + Clone {
         (u8::from(Self::Ace)..=u8::from(Self::King))
             .map(convert::TryFrom::try_from)
@@ -142,6 +146,14 @@ impl CardFace {
         Card { face: self, facing }
     }
 
+    pub fn face_down(self) -> Card {
+        self.with_facing(Facing::FaceDown)
+    }
+
+    pub fn face_up(self) -> Card {
+        self.with_facing(Facing::FaceUp)
+    }
+
     pub fn values() -> impl Iterator<Item = Self> {
         Suit::values()
             .cartesian_product(Rank::values())
@@ -186,6 +198,16 @@ impl Card {
 
     pub fn reverse(&mut self) {
         self.facing = self.facing.reversed()
+    }
+
+    pub fn face_down(mut self) -> Self {
+        self.facing = Facing::FaceDown;
+        self
+    }
+
+    pub fn face_up(mut self) -> Self {
+        self.facing = Facing::FaceUp;
+        self
     }
 
     pub fn reversed(mut self) -> Self {
