@@ -1,6 +1,4 @@
-use std::convert;
-
-use itertools::Itertools as _;
+use enum_like::EnumValues as _;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, derive_more::Display)]
 pub enum Color {
@@ -38,8 +36,7 @@ impl Facing {
     Eq,
     PartialEq,
     derive_more::Display,
-    num_enum::IntoPrimitive,
-    num_enum::TryFromPrimitive,
+    enum_like_derive::EnumLike,
 )]
 #[repr(u8)]
 pub enum Rank {
@@ -75,12 +72,6 @@ impl Rank {
     pub fn of(self, suit: Suit) -> CardFace {
         CardFace { rank: self, suit }
     }
-
-    pub fn values() -> impl Iterator<Item = Self> + ExactSizeIterator + Clone {
-        (u8::from(Self::Ace)..=u8::from(Self::King))
-            .map(convert::TryFrom::try_from)
-            .map(Result::unwrap)
-    }
 }
 
 #[derive(
@@ -92,8 +83,7 @@ impl Rank {
     Eq,
     PartialEq,
     derive_more::Display,
-    num_enum::IntoPrimitive,
-    num_enum::TryFromPrimitive,
+    enum_like_derive::EnumLike,
 )]
 #[repr(u8)]
 pub enum Suit {
@@ -114,15 +104,9 @@ impl Suit {
             Self::Hearts | Self::Diamonds => Color::Red,
         }
     }
-
-    pub fn values() -> impl Iterator<Item = Self> + ExactSizeIterator + Clone {
-        (u8::from(Self::Spades)..=u8::from(Self::Clubs))
-            .map(convert::TryFrom::try_from)
-            .map(Result::unwrap)
-    }
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, derive_more::Display)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, derive_more::Display, enum_like_derive::EnumLike)]
 #[display(fmt = "{} of {}", rank, suit)]
 pub struct CardFace {
     pub suit: Suit,
@@ -152,12 +136,6 @@ impl CardFace {
 
     pub fn face_up(self) -> Card {
         self.with_facing(Facing::FaceUp)
-    }
-
-    pub fn values() -> impl Iterator<Item = Self> {
-        Suit::values()
-            .cartesian_product(Rank::values())
-            .map(|(suit, rank)| CardFace { suit, rank })
     }
 }
 
