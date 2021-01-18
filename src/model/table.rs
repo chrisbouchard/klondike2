@@ -112,12 +112,9 @@ pub enum Action {
     Stock(Vec<card::Card>),
 }
 
-#[derive(Debug, snafu::Snafu)]
-pub enum Error {}
-
 impl action::Action<Table> for Action {
     // TODO: Use Error = ! once RFC 1216 is stabilized (rust-lang/rust#35121).
-    type Error = Error;
+    type Error = std::convert::Infallible;
 
     fn apply_to(self, table: &mut Table) -> Result<(), Self::Error> {
         match self {
