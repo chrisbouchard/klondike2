@@ -155,6 +155,8 @@ impl action::Action<Table> for Action {
 
 #[cfg(test)]
 mod tests {
+    use test_case::test_case;
+
     use super::*;
 
     #[test]
@@ -162,66 +164,17 @@ mod tests {
         Table::new();
     }
 
-    #[test]
-    fn new_should_create_empty_stock() {
+    #[test_case(PileId::Stock => true; "Stock")]
+    #[test_case(PileId::Waste => true; "Waste")]
+    #[test_case(PileId::Foundation(card::Suit::Spades) => true; "Spades Foundation")]
+    #[test_case(PileId::Foundation(card::Suit::Hearts) => true; "Hearts Foundation")]
+    #[test_case(PileId::Foundation(card::Suit::Diamonds) => true; "Diamonds Foundation")]
+    #[test_case(PileId::Foundation(card::Suit::Clubs) => true; "Clubs Foundation")]
+    #[test_case(PileId::Tableaux(0) => true; "Tableaux Index 0")]
+    #[test_case(PileId::Tableaux(6) => true; "Tableaux Index 6")]
+    #[test_case(PileId::Tableaux(99) => true; "Tableaux Index 99")]
+    fn new_should_create_empty_table(pile_id: PileId) -> bool {
         let table = Table::new();
-        assert!(table.pile(PileId::Stock).is_empty(), "Stock is not empty");
-    }
-
-    #[test]
-    fn new_should_create_empty_waste() {
-        let table = Table::new();
-        assert!(table.pile(PileId::Waste).is_empty(), "Waste is not empty");
-    }
-
-    #[test]
-    fn new_should_create_empty_spades_foundation() {
-        let table = Table::new();
-        assert!(
-            table
-                .pile(PileId::Foundation(card::Suit::Spades))
-                .is_empty(),
-            "Spades foundation is not empty"
-        );
-    }
-
-    #[test]
-    fn new_should_create_empty_hearts_foundation() {
-        let table = Table::new();
-        assert!(
-            table
-                .pile(PileId::Foundation(card::Suit::Hearts))
-                .is_empty(),
-            "Hearts foundation is not empty"
-        );
-    }
-
-    #[test]
-    fn new_should_create_empty_diamonds_foundation() {
-        let table = Table::new();
-        assert!(
-            table
-                .pile(PileId::Foundation(card::Suit::Diamonds))
-                .is_empty(),
-            "Diamonds foundation is not empty"
-        );
-    }
-
-    #[test]
-    fn new_should_create_empty_clubs_foundation() {
-        let table = Table::new();
-        assert!(
-            table.pile(PileId::Foundation(card::Suit::Clubs)).is_empty(),
-            "Clubs foundation is not empty"
-        );
-    }
-
-    #[test]
-    fn new_should_create_empty_tableaux() {
-        let table = Table::new();
-        assert!(
-            table.pile(PileId::Tableaux(0)).is_empty(),
-            "Tableaux is not empty"
-        );
+        table.pile(pile_id).is_empty()
     }
 }
