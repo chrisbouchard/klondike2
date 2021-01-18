@@ -35,8 +35,8 @@ impl Deck {
         Self { cards }
     }
 
-    pub fn shuffle(&mut self, shuffler: Shuffle) {
-        shuffler.shuffle(&mut self.cards);
+    pub fn shuffle(&mut self, shuffle: Shuffle) {
+        shuffle.shuffle(&mut self.cards);
     }
 }
 
