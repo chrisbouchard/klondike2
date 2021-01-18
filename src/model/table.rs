@@ -3,6 +3,7 @@ use enum_like::EnumValues as _;
 use super::action;
 use super::card;
 use super::pile;
+use super::rules;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, derive_more::Display)]
 pub enum PileId {
@@ -147,6 +148,23 @@ impl action::Action<Table> for Action {
         }
 
         Ok(())
+    }
+}
+
+#[derive(Debug, Copy, Clone)]
+pub struct TableRules {
+    can_move_from_foundation: bool,
+    tableaux_width: usize,
+}
+
+#[derive(Debug, snafu::Snafu)]
+pub enum RulesError {}
+
+impl rules::Rules<Table, Action> for TableRules {
+    type Error = RulesError;
+
+    fn check_rules(&self, target: &Table, action: &Action) -> Result<(), Self::Error> {
+        todo!()
     }
 }
 
