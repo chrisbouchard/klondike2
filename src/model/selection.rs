@@ -1,17 +1,17 @@
 use super::action;
-use super::pile;
+use super::table;
 
 #[derive(Debug, Copy, Clone)]
 enum State {
     Held {
-        source: pile::PileId,
+        source: table::PileId,
         extra_count: usize,
     },
     Visual,
 }
 
 impl State {
-    fn source(&self) -> Option<pile::PileId> {
+    fn source(&self) -> Option<table::PileId> {
         match self {
             Self::Held { source, .. } => Some(*source),
             Self::Visual => None,
@@ -25,7 +25,7 @@ impl State {
         }
     }
 
-    fn resize(self, new_count: usize, current_target: pile::PileId) -> Self {
+    fn resize(self, new_count: usize, current_target: table::PileId) -> Self {
         if new_count == 0 {
             Self::Visual
         } else {
@@ -39,23 +39,23 @@ impl State {
 
 #[derive(Debug, Clone)]
 pub struct Selection {
-    target: pile::PileId,
+    target: table::PileId,
     state: State,
 }
 
 impl Selection {
     pub const fn new() -> Self {
         Self {
-            target: pile::PileId::Stock,
+            target: table::PileId::Stock,
             state: State::Visual,
         }
     }
 
-    pub fn target(&self) -> pile::PileId {
+    pub fn target(&self) -> table::PileId {
         self.target
     }
 
-    pub fn source(&self) -> pile::PileId {
+    pub fn source(&self) -> table::PileId {
         self.state.source().unwrap_or(self.target)
     }
 
@@ -72,8 +72,8 @@ impl Default for Selection {
 
 #[derive(Debug, Copy, Clone)]
 pub enum Action {
-    GoTo(pile::PileId),
-    Hold(pile::PileId, usize),
+    GoTo(table::PileId),
+    Hold(table::PileId, usize),
     Resize(usize),
     Return,
 }

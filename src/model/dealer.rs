@@ -2,7 +2,7 @@ use std::iter;
 
 use super::card;
 use super::game;
-use super::pile;
+use super::table;
 
 #[derive(Debug)]
 enum DealerState {
@@ -42,12 +42,12 @@ impl DealerState {
     {
         match self {
             &Self::Deal { current_index, .. } => {
-                let pile_id = pile::PileId::Tableaux(current_index);
+                let pile_id = table::PileId::Tableaux(current_index);
                 let next_card = card_iter.next().expect("card_iter was unexpectedly empty");
                 Some(game::Action::Deal(pile_id, next_card))
             }
             &Self::Reveal { current_index, .. } => {
-                let pile_id = pile::PileId::Tableaux(current_index);
+                let pile_id = table::PileId::Tableaux(current_index);
                 Some(game::Action::RevealAt(pile_id))
             }
             Self::Stock => Some(game::Action::Stock(card_iter.collect())),
@@ -180,7 +180,7 @@ mod tests {
         assert_matches!(
             dealer_iter.next(),
             Some(game::Action::Deal(pile_id, actual_card)) => {
-                assert_eq!(pile_id, pile::PileId::Tableaux(0));
+                assert_eq!(pile_id, table::PileId::Tableaux(0));
                 assert_eq!(actual_card, expected_card);
             }
         );
@@ -230,7 +230,7 @@ mod tests {
             assert_matches!(
                 dealer_iter.next(),
                 Some(game::Action::Deal(pile_id, actual_card)) => {
-                    assert_eq!(pile_id, pile::PileId::Tableaux(expected_index));
+                    assert_eq!(pile_id, table::PileId::Tableaux(expected_index));
                     assert_eq!(actual_card, expected_card);
                 }
             );
@@ -263,7 +263,7 @@ mod tests {
             assert_matches!(
                 dealer_iter.next(),
                 Some(game::Action::Deal(pile_id, actual_card)) => {
-                    assert_eq!(pile_id, pile::PileId::Tableaux(expected_index));
+                    assert_eq!(pile_id, table::PileId::Tableaux(expected_index));
                     assert_eq!(actual_card, expected_card);
                 }
             );
@@ -293,7 +293,7 @@ mod tests {
             assert_matches!(
                 dealer_iter.next(),
                 Some(game::Action::RevealAt(pile_id)) => {
-                    assert_eq!(pile_id, pile::PileId::Tableaux(expected_index));
+                    assert_eq!(pile_id, table::PileId::Tableaux(expected_index));
                 }
             );
         }

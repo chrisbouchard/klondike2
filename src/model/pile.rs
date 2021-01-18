@@ -3,39 +3,9 @@ use std::mem;
 use std::slice;
 use std::vec;
 
-use enum_like::EnumValues as _;
 use itertools::Itertools as _;
 
 use super::card;
-
-#[derive(Debug, Copy, Clone, Eq, PartialEq, derive_more::Display)]
-pub enum PileId {
-    #[display(fmt = "Stock")]
-    Stock,
-    #[display(fmt = "Waste")]
-    Waste,
-    #[display(fmt = "{} Foundation", _0)]
-    Foundation(card::Suit),
-    #[display(fmt = "Tableaux {}", _0 + 1)]
-    Tableaux(usize),
-}
-
-impl PileId {
-    pub fn standard_iter() -> impl Iterator<Item = PileId> {
-        velcro::iter![
-            PileId::Stock,
-            PileId::Waste,
-            ..card::Suit::values().map(PileId::Foundation)
-        ]
-    }
-
-    pub fn full_iter(tableaux_width: usize) -> impl Iterator<Item = PileId> {
-        velcro::iter![
-            ..Self::standard_iter(),
-            ..(0..tableaux_width).map(PileId::Tableaux)
-        ]
-    }
-}
 
 pub type Iter<'a> = slice::Iter<'a, card::Card>;
 pub type IntoIter = vec::IntoIter<card::Card>;

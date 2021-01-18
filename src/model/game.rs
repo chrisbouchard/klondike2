@@ -4,7 +4,6 @@ use snafu::ResultExt as _;
 
 use super::action;
 use super::card;
-use super::pile;
 use super::selection;
 use super::table;
 
@@ -57,12 +56,12 @@ where
 #[derive(Debug, Clone)]
 pub enum Action {
     CancelMove,
-    Deal(pile::PileId, card::Card),
+    Deal(table::PileId, card::Card),
     Draw(usize),
-    GoTo(pile::PileId),
+    GoTo(table::PileId),
     PlaceMove,
     Reveal,
-    RevealAt(pile::PileId),
+    RevealAt(table::PileId),
     SelectLess,
     SelectMore,
     SelectAll,
@@ -178,7 +177,7 @@ where
 
                 if let Some(top_card) = source_pile.top_card() {
                     let suit = top_card.suit();
-                    let target_id = pile::PileId::Foundation(suit);
+                    let target_id = table::PileId::Foundation(suit);
                     game.table
                         .apply(table::Action::Move(source_id, target_id, 1))
                         .context(TableError {
@@ -202,7 +201,7 @@ where
             Self::TakeFromWaste => {
                 // This implicitly cancels the existing selection (if any).
                 game.selection
-                    .apply(selection::Action::Hold(pile::PileId::Waste, 1))
+                    .apply(selection::Action::Hold(table::PileId::Waste, 1))
                     .context(SelectionError { action: self })?;
             }
         }
