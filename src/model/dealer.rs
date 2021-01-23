@@ -18,27 +18,39 @@ impl Dealer {
     where
         I: IntoIterator<Item = card::Card>,
     {
-        let mut card_iter = cards.into_iter().peekable();
-        let state = DealerState::init(self.tableaux_width, &mut card_iter);
+        Iter::new(self.tableaux_width, cards)
+    }
+}
 
-        Iter {
-            dealer: self,
+pub struct Iter<C>
+where
+    C: Iterator,
+{
+    tableaux_width: usize,
+    card_iter: iter::Peekable<C>,
+    state: DealerState,
+}
+
+impl<C> Iter<C>
+where
+    C: Iterator<Item = card::Card>,
+{
+    fn new<I>(tableaux_width: usize, cards: I) -> Self
+    where
+        I: IntoIterator<Item = card::Card, IntoIter = C>,
+    {
+        let mut card_iter = cards.into_iter().peekable();
+        let state = DealerState::init(tableaux_width, &mut card_iter);
+
+        Self {
+            tableaux_width,
             card_iter,
             state,
         }
     }
 }
 
-pub struct Iter<'d, C>
-where
-    C: Iterator,
-{
-    dealer: &'d Dealer,
-    card_iter: iter::Peekable<C>,
-    state: DealerState,
-}
-
-impl<'d, C> Iterator for Iter<'d, C>
+impl<C> Iterator for Iter<C>
 where
     C: Iterator<Item = card::Card>,
 {
@@ -46,22 +58,86 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         let action = self.state.action(&mut self.card_iter);
-        self.state = self
-            .state
-            .next(self.dealer.tableaux_width, &mut self.card_iter);
+        self.state = self.state.next(self.tableaux_width, &mut self.card_iter);
         action
     }
 }
 
-#[derive(Debug)]
+mod position {
+    #[derive(Debug, Copy, Clone, Eq, PartialEq, Default)]
+    pub struct Dealing {
+        column: usize,
+        row: usize,
+    }
+
+    impl Dealing {
+        pub fn step(self, tableaux_width: usize) -> Option<Self> {
+            let row_width = tableaux_width - self.row;
+            let next_column = (self.column + 1) % row_width;
+            let next_row = self.row + (self.column + 1) / row_width;
+
+            if next_row < tableaux_width {
+                Some(Self {
+                    column: next_column,
+                    row: next_row,
+                })
+            } else {
+                None
+            }
+        }
+
+        pub fn tableaux_index(self) -> usize {
+            self.column + self.row
+        }
+    }
+
+    #[derive(Debug, Copy, Clone, Eq, PartialEq, Default)]
+    pub struct Revealing {
+        index: usize,
+    }
+
+    impl Revealing {
+        pub fn step(self, tableaux_width: usize) -> Option<Self> {
+            let next_index = self.index + 1;
+
+            if next_index < tableaux_width {
+                Some(Self { index: next_index })
+            } else {
+                None
+            }
+        }
+
+        pub fn tableaux_index(self) -> usize {
+            self.index
+        }
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use test_case::test_case;
+
+        use super::*;
+
+        #[test_case(Dealing { column: 0, row: 0}, 4 => Some(Dealing { column: 1, row: 0}))]
+        #[test_case(Dealing { column: 1, row: 0}, 4 => Some(Dealing { column: 2, row: 0}))]
+        #[test_case(Dealing { column: 2, row: 0}, 4 => Some(Dealing { column: 3, row: 0}))]
+        #[test_case(Dealing { column: 3, row: 0}, 4 => Some(Dealing { column: 0, row: 1}))]
+        #[test_case(Dealing { column: 0, row: 1}, 4 => Some(Dealing { column: 1, row: 1}))]
+        #[test_case(Dealing { column: 1, row: 1}, 4 => Some(Dealing { column: 2, row: 1}))]
+        #[test_case(Dealing { column: 2, row: 1}, 4 => Some(Dealing { column: 0, row: 2}))]
+        #[test_case(Dealing { column: 0, row: 2}, 4 => Some(Dealing { column: 1, row: 2}))]
+        #[test_case(Dealing { column: 1, row: 2}, 4 => Some(Dealing { column: 0, row: 3}))]
+        #[test_case(Dealing { column: 0, row: 3}, 4 => None)]
+        fn dealing_step(position: Dealing, tableaux_width: usize) -> Option<Dealing> {
+            position.step(tableaux_width)
+        }
+    }
+}
+
+#[derive(Debug, Copy, Clone)]
 enum DealerState {
-    Deal {
-        current_index: usize,
-        current_row: usize,
-    },
-    Reveal {
-        current_index: usize,
-    },
+    Deal(position::Dealing),
+    Reveal(position::Revealing),
     Stock,
     Done,
 }
@@ -73,10 +149,7 @@ impl DealerState {
     {
         if card_iter.peek().is_some() {
             if tableaux_width > 0 {
-                Self::Deal {
-                    current_index: 0,
-                    current_row: 0,
-                }
+                Self::Deal(Default::default())
             } else {
                 Self::Stock
             }
@@ -90,13 +163,13 @@ impl DealerState {
         C: Iterator<Item = card::Card>,
     {
         match self {
-            &Self::Deal { current_index, .. } => {
-                let pile_id = table::PileId::Tableaux(current_index);
+            &Self::Deal(current_position) => {
+                let pile_id = table::PileId::Tableaux(current_position.tableaux_index());
                 let next_card = card_iter.next().expect("card_iter was unexpectedly empty");
                 Some(game::Action::Deal(pile_id, next_card))
             }
-            &Self::Reveal { current_index, .. } => {
-                let pile_id = table::PileId::Tableaux(current_index);
+            &Self::Reveal(current_position) => {
+                let pile_id = table::PileId::Tableaux(current_position.tableaux_index());
                 Some(game::Action::RevealAt(pile_id))
             }
             Self::Stock => Some(game::Action::Stock(card_iter.collect())),
@@ -109,51 +182,15 @@ impl DealerState {
         C: Iterator<Item = card::Card>,
     {
         match self {
-            &Self::Deal {
-                current_index,
-                current_row,
-                ..
-            } => {
-                let maybe_next_index_and_row = {
-                    if card_iter.peek().is_none() {
-                        None
-                    } else {
-                        let next_index = current_index + 1;
-
-                        if next_index < tableaux_width {
-                            Some((next_index, current_row))
-                        } else {
-                            let next_row = current_row + 1;
-
-                            if next_row < tableaux_width {
-                                Some((next_row, next_row))
-                            } else {
-                                None
-                            }
-                        }
-                    }
-                };
-
-                if let Some((next_index, next_row)) = maybe_next_index_and_row {
-                    Self::Deal {
-                        current_index: next_index,
-                        current_row: next_row,
-                    }
-                } else {
-                    Self::Reveal { current_index: 0 }
-                }
-            }
-            &Self::Reveal { current_index } => {
-                let next_index = current_index + 1;
-
-                if next_index < tableaux_width {
-                    Self::Reveal {
-                        current_index: next_index,
-                    }
-                } else {
-                    Self::Stock
-                }
-            }
+            Self::Deal(current_position) => card_iter
+                .peek()
+                .and_then(|_| current_position.step(tableaux_width))
+                .map(Self::Deal)
+                .unwrap_or_else(|| Self::Reveal(Default::default())),
+            Self::Reveal(current_position) => current_position
+                .step(tableaux_width)
+                .map(Self::Reveal)
+                .unwrap_or(Self::Stock),
             Self::Stock => Self::Done,
             Self::Done => Self::Done,
         }
