@@ -10,7 +10,7 @@ use super::card;
 pub type Iter<'a> = slice::Iter<'a, card::Card>;
 pub type IntoIter = vec::IntoIter<card::Card>;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Pile {
     cards: Vec<card::Card>,
 }

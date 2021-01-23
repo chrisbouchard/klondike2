@@ -4,6 +4,7 @@ use snafu::ResultExt as _;
 
 use super::action;
 use super::card;
+use super::pile;
 use super::selection;
 use super::table;
 
@@ -67,7 +68,7 @@ pub enum Action {
     SelectAll,
     SendToFoundation,
     Start,
-    Stock(Vec<card::Card>),
+    Stock(pile::Pile),
     TakeFromWaste,
 }
 
@@ -195,7 +196,7 @@ where
             }
             Self::Stock(ref stock) => {
                 game.table
-                    .apply(table::Action::Stock(stock.clone()))
+                    .apply(table::Action::Place(table::PileId::Stock, stock.clone()))
                     .context(TableError { action: self })?;
             }
             Self::TakeFromWaste => {

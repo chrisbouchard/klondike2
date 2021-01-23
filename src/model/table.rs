@@ -109,8 +109,8 @@ pub enum Action {
     Deal(PileId, card::Card),
     Draw(usize),
     Move(PileId, PileId, usize),
+    Place(PileId, pile::Pile),
     Reveal(PileId),
-    Stock(Vec<card::Card>),
 }
 
 impl action::Action<Table> for Action {
@@ -137,13 +137,13 @@ impl action::Action<Table> for Action {
                 let moved_cards = table.pile_mut(source_pile_id).take(count);
                 table.pile_mut(target_pile_id).place(moved_cards);
             }
+            Self::Place(target_pile_id, pile) => {
+                table.pile_mut(target_pile_id).place(pile);
+            }
             Self::Reveal(target_pile_id) => {
                 table
                     .pile_mut(target_pile_id)
                     .flip_top_to(card::Facing::FaceUp);
-            }
-            Self::Stock(stock) => {
-                table.stock.place_cards(stock);
             }
         }
 
@@ -171,8 +171,8 @@ impl rules::Rules<Table, Action> for TableRules {
             Action::Deal(target_pile_id, card) => todo!(),
             Action::Draw(count) => todo!(),
             Action::Move(source_pile_id, target_pile_id, count) => todo!(),
+            Action::Place(target_pile_id, pile) => todo!(),
             Action::Reveal(target_pile_id) => todo!(),
-            Action::Stock(stock) => todo!(),
         }
     }
 }

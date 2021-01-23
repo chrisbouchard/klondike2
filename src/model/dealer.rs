@@ -163,9 +163,9 @@ where
 #[cfg(test)]
 mod tests {
     use assert_matches::assert_matches;
-    use itertools::Itertools as _;
     use test_case::test_case;
 
+    use super::super::pile;
     use super::*;
 
     #[test]
@@ -200,7 +200,7 @@ mod tests {
         let mut card_iter = card::Card::values_face_down();
         let mut dealer_iter = dealer.deal_cards(&mut card_iter);
 
-        let expected_stock = card::Card::values_face_down().collect_vec();
+        let expected_stock = card::Card::values_face_down().collect::<pile::Pile>();
 
         assert_matches!(
             dealer_iter.next(),
@@ -324,7 +324,7 @@ mod tests {
         // Skip the cards already dealt in `dealer_should_deal_full_tableaux`.
         let expected_stock = card::Card::values_face_down()
             .skip(dealt_card_count)
-            .collect_vec();
+            .collect::<pile::Pile>();
 
         assert_matches!(
             dealer_iter.next(),
