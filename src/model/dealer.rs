@@ -29,6 +29,30 @@ impl Dealer {
     }
 }
 
+pub struct Iter<'d, C>
+where
+    C: Iterator,
+{
+    dealer: &'d Dealer,
+    card_iter: iter::Peekable<C>,
+    state: DealerState,
+}
+
+impl<'d, C> Iterator for Iter<'d, C>
+where
+    C: Iterator<Item = card::Card>,
+{
+    type Item = game::Action;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let action = self.state.action(&mut self.card_iter);
+        self.state = self
+            .state
+            .next(self.dealer.tableaux_width, &mut self.card_iter);
+        action
+    }
+}
+
 #[derive(Debug)]
 enum DealerState {
     Deal {
@@ -133,30 +157,6 @@ impl DealerState {
             Self::Stock => Self::Done,
             Self::Done => Self::Done,
         }
-    }
-}
-
-pub struct Iter<'d, C>
-where
-    C: Iterator,
-{
-    dealer: &'d Dealer,
-    card_iter: iter::Peekable<C>,
-    state: DealerState,
-}
-
-impl<'d, C> Iterator for Iter<'d, C>
-where
-    C: Iterator<Item = card::Card>,
-{
-    type Item = game::Action;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let action = self.state.action(&mut self.card_iter);
-        self.state = self
-            .state
-            .next(self.dealer.tableaux_width, &mut self.card_iter);
-        action
     }
 }
 
