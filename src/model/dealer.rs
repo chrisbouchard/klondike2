@@ -5,6 +5,31 @@ use super::game;
 use super::table;
 
 #[derive(Debug)]
+pub struct Dealer {
+    tableaux_width: usize,
+}
+
+impl Dealer {
+    pub fn with_tableaux_width(tableaux_width: usize) -> Self {
+        Self { tableaux_width }
+    }
+
+    pub fn deal_cards<I>(&self, cards: I) -> Iter<I::IntoIter>
+    where
+        I: IntoIterator<Item = card::Card>,
+    {
+        let mut card_iter = cards.into_iter().peekable();
+        let state = DealerState::init(self.tableaux_width, &mut card_iter);
+
+        Iter {
+            dealer: self,
+            card_iter,
+            state,
+        }
+    }
+}
+
+#[derive(Debug)]
 enum DealerState {
     Deal {
         current_index: usize,
@@ -107,31 +132,6 @@ impl DealerState {
             }
             Self::Stock => Self::Done,
             Self::Done => Self::Done,
-        }
-    }
-}
-
-#[derive(Debug)]
-pub struct Dealer {
-    tableaux_width: usize,
-}
-
-impl Dealer {
-    pub fn with_tableaux_width(tableaux_width: usize) -> Self {
-        Self { tableaux_width }
-    }
-
-    pub fn deal_cards<I>(&self, cards: I) -> Iter<I::IntoIter>
-    where
-        I: IntoIterator<Item = card::Card>,
-    {
-        let mut card_iter = cards.into_iter().peekable();
-        let state = DealerState::init(self.tableaux_width, &mut card_iter);
-
-        Iter {
-            dealer: self,
-            card_iter,
-            state,
         }
     }
 }
