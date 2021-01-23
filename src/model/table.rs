@@ -158,13 +158,22 @@ pub struct TableRules {
 }
 
 #[derive(Debug, snafu::Snafu)]
-pub enum RulesError {}
+pub enum RulesError {
+    #[snafu(display(""))]
+    InvalidFacing { expected_facing: card::Facing },
+}
 
 impl rules::Rules<Table, Action> for TableRules {
     type Error = RulesError;
 
     fn check_rules(&self, target: &Table, action: &Action) -> Result<(), Self::Error> {
-        todo!()
+        match action {
+            Action::Deal(target_pile_id, card) => todo!(),
+            Action::Draw(count) => todo!(),
+            Action::Move(source_pile_id, target_pile_id, count) => todo!(),
+            Action::Reveal(target_pile_id) => todo!(),
+            Action::Stock(stock) => todo!(),
+        }
     }
 }
 
