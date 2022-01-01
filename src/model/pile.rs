@@ -28,6 +28,33 @@ impl Pile {
         self.cards.first()
     }
 
+    pub fn top_cards(&self, count: usize) -> &[card::Card] {
+        let start_index = self.len().saturating_sub(count);
+        &self.cards[start_index..]
+    }
+
+    /// Get the slice of face-up cards on top of the pile. If there are no face-up cards on top
+    /// this method will return an empty slice. If there are no face-down cards, this method will
+    /// return a slice of the whole pile.
+    pub fn top_face_up_cards(&self) -> &[card::Card] {
+        // Find the index of the last face-up card immediately after a face-down card, after which
+        // all cards will be face-up. We search from the end because the pile is stored bottom to
+        // top in the vector.
+        let last_face_up_card_index = self
+            .iter()
+            .enumerate()
+            // Look for the index of the first face-down card from the end, and if we find it we
+            // add one to get the index of the face-up card after it. This may put us one off the
+            // end of the vector (if there are no face-up cards), but that's ok; we'll just return
+            // an empty slice later.
+            .rfind(|(_, card)| card.is_face_down())
+            .map(|(index, _)| index + 1)
+            // If there are no face-down cards, use index 0 so we get the whole pile.
+            .unwrap_or(0);
+
+        &self.cards[last_face_up_card_index..]
+    }
+
     pub fn is_empty(&self) -> bool {
         self.cards.is_empty()
     }

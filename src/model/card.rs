@@ -1,4 +1,5 @@
-use enum_like::EnumValues as _;
+use enum_like::EnumLike;
+use enum_like::EnumValues;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, derive_more::Display)]
 pub enum Color {
@@ -72,6 +73,23 @@ impl Rank {
     pub fn of(self, suit: Suit) -> CardFace {
         CardFace { rank: self, suit }
     }
+
+    pub fn next(self) -> Option<Self> {
+        let next_discr = self.to_discr() + 1;
+
+        if next_discr < <Self as EnumLike>::NUM_VARIANTS {
+            Some(<Self as EnumLike>::from_discr(next_discr))
+        } else {
+            None
+        }
+    }
+
+    pub fn follows(self, other: Rank) -> bool {
+        other
+            .next()
+            .map(|other_next| self == other_next)
+            .unwrap_or_default()
+    }
 }
 
 #[derive(
@@ -136,6 +154,10 @@ impl CardFace {
 
     pub fn face_up(self) -> Card {
         self.with_facing(Facing::FaceUp)
+    }
+
+    pub fn next_in_suit(self) -> Option<Self> {
+        self.rank.next().map(|rank| Self { rank, ..self })
     }
 }
 

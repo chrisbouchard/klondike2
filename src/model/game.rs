@@ -155,18 +155,12 @@ where
             }
             Self::SelectAll => {
                 let target_id = game.selection.as_ref().target();
-
-                // Count the number of face-up cards on top of the pile. Piles iterate bottom to
-                // top. Note that we don't care whether the remaining cards are all face-down.
-                let new_count = {
-                    game.table
-                        .as_ref()
-                        .pile(target_id)
-                        .iter()
-                        .rev()
-                        .take_while(|card| card.is_face_up())
-                        .count()
-                };
+                let new_count = game
+                    .table
+                    .as_ref()
+                    .pile(target_id)
+                    .top_face_up_cards()
+                    .len();
 
                 game.selection
                     .apply(selection::Action::Resize(new_count))
@@ -196,7 +190,7 @@ where
             }
             Self::Stock(ref stock) => {
                 game.table
-                    .apply(table::Action::Place(table::PileId::Stock, stock.clone()))
+                    .apply(table::Action::AddStock(stock.clone()))
                     .context(TableError { action: self })?;
             }
             Self::TakeFromWaste => {
