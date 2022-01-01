@@ -184,17 +184,25 @@ pub enum RulesError {
         mismatch: FoundationMismatchType,
     },
     #[snafu(display(""))]
+    IllegalDealTargetFacing { facing: card::Facing },
+    #[snafu(display(""))]
     IllegalMoveFromFoundation,
+    #[snafu(display(""))]
+    IllegalMoveSourceFacing { facing: card::Facing },
+    #[snafu(display(""))]
+    IllegalMoveTargetFacing { facing: card::Facing },
+    #[snafu(display(""))]
+    IllegalStockFacing { facing: card::Facing },
     #[snafu(display(""))]
     InsufficientCards,
     #[snafu(display(""))]
     InvalidDealTarget { pile_id: PileId },
     #[snafu(display(""))]
-    InvalidFacing { card: card::CardFace },
-    #[snafu(display(""))]
     InvalidMoveSource { pile_id: PileId },
     #[snafu(display(""))]
     InvalidMoveTarget { pile_id: PileId },
+    #[snafu(display(""))]
+    InvalidRevealTarget { pile_id: PileId },
     #[snafu(display(""))]
     MayOnlyAcceptSingleCard { pile_id: PileId },
     #[snafu(display(""))]
@@ -213,29 +221,24 @@ impl rules::Rules<Table, Action> for Rules {
 
     fn check_rules(&self, target: &Table, action: &Action) -> Result<(), Self::Error> {
         match action {
-            &Action::Deal(target_pile_id, ref dealt_card) => {
+            &Action::Deal(target_pile_id, _) => {
                 if let PileId::Tableaux(index) = target_pile_id {
                     snafu::ensure!(index < self.tableaux_width, PileOutOfBounds { index });
 
                     if let Some(top_card) = target.pile(target_pile_id).top_card() {
                         snafu::ensure!(
                             top_card.facing == card::Facing::FaceDown,
-                            InvalidFacing {
-                                card: dealt_card.face
+                            IllegalDealTargetFacing {
+                                facing: top_card.facing
                             }
                         );
                     }
-
-                    Ok(())
                 } else {
-                    Err(RulesError::InvalidDealTarget {
+                    return InvalidDealTarget {
                         pile_id: target_pile_id,
-                    })
+                    }
+                    .fail();
                 }
-            }
-            &Action::Draw(..) => {
-                //TODO: Should we check this?
-                Ok(())
             }
             &Action::Move(source_pile_id, target_pile_id, count) => {
                 snafu::ensure!(count > 0, EmptyMove);
@@ -246,8 +249,8 @@ impl rules::Rules<Table, Action> for Rules {
                 // We assume it's sufficient to check the facing of the bottom card of the pile.
                 snafu::ensure!(
                     source_top_cards[0].is_face_up(),
-                    InvalidFacing {
-                        card: source_top_cards[0].face
+                    IllegalMoveSourceFacing {
+                        facing: source_top_cards[0].facing
                     }
                 );
 
@@ -273,9 +276,10 @@ impl rules::Rules<Table, Action> for Rules {
                         );
                     }
                     _ => {
-                        return Err(RulesError::InvalidMoveSource {
+                        return InvalidMoveSource {
                             pile_id: source_pile_id,
-                        });
+                        }
+                        .fail()
                     }
                 }
 
@@ -284,6 +288,12 @@ impl rules::Rules<Table, Action> for Rules {
                         snafu::ensure!(index < self.tableaux_width, PileOutOfBounds { index });
 
                         if let Some(target_top_card) = target.pile(target_pile_id).top_card() {
+                            snafu::ensure!(
+                                target_top_card.is_face_up(),
+                                IllegalMoveTargetFacing {
+                                    facing: target_top_card.facing
+                                }
+                            );
                             snafu::ensure!(
                                 target_top_card.rank().follows(source_top_cards[0].rank()),
                                 TableauxMismatch {
@@ -353,17 +363,27 @@ impl rules::Rules<Table, Action> for Rules {
                         }
                     }
                     _ => {
-                        return Err(RulesError::InvalidMoveTarget {
+                        return InvalidMoveTarget {
                             pile_id: target_pile_id,
-                        });
+                        }
+                        .fail();
                     }
                 }
-
-                Ok(())
             }
-            &Action::AddStock(ref pile) => todo!(),
-            &Action::Reveal(target_pile_id) => todo!(),
+            &Action::Reveal(target_pile_id) => {
+                if let PileId::Tableaux(index) = target_pile_id {
+                    snafu::ensure!(index < self.tableaux_width, PileOutOfBounds { index });
+                } else {
+                    return InvalidRevealTarget {
+                        pile_id: target_pile_id,
+                    }
+                    .fail();
+                }
+            }
+            _ => {}
         }
+
+        Ok(())
     }
 }
 
