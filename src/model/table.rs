@@ -184,25 +184,25 @@ pub enum RulesError {
         mismatch: FoundationMismatchType,
     },
     #[snafu(display(""))]
+    IllegalDealTarget { pile_id: PileId },
+    #[snafu(display(""))]
     IllegalDealTargetFacing { facing: card::Facing },
     #[snafu(display(""))]
     IllegalMoveFromFoundation,
     #[snafu(display(""))]
+    IllegalMoveSource { pile_id: PileId },
+    #[snafu(display(""))]
     IllegalMoveSourceFacing { facing: card::Facing },
     #[snafu(display(""))]
+    IllegalMoveTarget { pile_id: PileId },
+    #[snafu(display(""))]
     IllegalMoveTargetFacing { facing: card::Facing },
+    #[snafu(display(""))]
+    IllegalRevealTarget { pile_id: PileId },
     #[snafu(display(""))]
     IllegalStockFacing { facing: card::Facing },
     #[snafu(display(""))]
     InsufficientCards,
-    #[snafu(display(""))]
-    InvalidDealTarget { pile_id: PileId },
-    #[snafu(display(""))]
-    InvalidMoveSource { pile_id: PileId },
-    #[snafu(display(""))]
-    InvalidMoveTarget { pile_id: PileId },
-    #[snafu(display(""))]
-    InvalidRevealTarget { pile_id: PileId },
     #[snafu(display(""))]
     MayOnlyAcceptSingleCard { pile_id: PileId },
     #[snafu(display(""))]
@@ -234,7 +234,7 @@ impl rules::Rules<Table, Action> for Rules {
                         );
                     }
                 } else {
-                    return InvalidDealTarget {
+                    return IllegalDealTarget {
                         pile_id: target_pile_id,
                     }
                     .fail();
@@ -276,7 +276,7 @@ impl rules::Rules<Table, Action> for Rules {
                         );
                     }
                     _ => {
-                        return InvalidMoveSource {
+                        return IllegalMoveSource {
                             pile_id: source_pile_id,
                         }
                         .fail()
@@ -363,7 +363,7 @@ impl rules::Rules<Table, Action> for Rules {
                         }
                     }
                     _ => {
-                        return InvalidMoveTarget {
+                        return IllegalMoveTarget {
                             pile_id: target_pile_id,
                         }
                         .fail();
@@ -374,7 +374,7 @@ impl rules::Rules<Table, Action> for Rules {
                 if let PileId::Tableaux(index) = target_pile_id {
                     snafu::ensure!(index < self.tableaux_width, PileOutOfBounds { index });
                 } else {
-                    return InvalidRevealTarget {
+                    return IllegalRevealTarget {
                         pile_id: target_pile_id,
                     }
                     .fail();
