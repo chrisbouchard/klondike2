@@ -9,7 +9,7 @@ pub enum Color {
     Red,
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, derive_more::Display)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, derive_more::Display, enum_like_derive::EnumLike)]
 pub enum Facing {
     #[display(fmt = "Face down")]
     FaceDown,

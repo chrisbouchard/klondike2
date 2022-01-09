@@ -20,6 +20,15 @@ impl Pile {
         Self { cards: Vec::new() }
     }
 
+    pub fn new_with_cards<I>(cards: I) -> Self
+    where
+        I: IntoIterator<Item = card::Card>,
+    {
+        let mut pile = Self::new();
+        pile.place_cards(cards);
+        pile
+    }
+
     pub fn iter(&self) -> Iter {
         self.cards.iter()
     }
@@ -57,6 +66,14 @@ impl Pile {
 
     pub fn is_empty(&self) -> bool {
         self.cards.is_empty()
+    }
+
+    pub fn is_face_down(&self) -> bool {
+        self.cards.iter().all(card::Card::is_face_down)
+    }
+
+    pub fn is_face_up(&self) -> bool {
+        self.cards.iter().all(card::Card::is_face_up)
     }
 
     pub fn len(&self) -> usize {
@@ -144,8 +161,6 @@ impl<'a> IntoIterator for &'a Pile {
 
 impl iter::FromIterator<card::Card> for Pile {
     fn from_iter<T: IntoIterator<Item = card::Card>>(iter: T) -> Self {
-        Self {
-            cards: velcro::vec![..iter],
-        }
+        Self::new_with_cards(iter)
     }
 }

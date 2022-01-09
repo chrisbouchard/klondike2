@@ -1,67 +1,17 @@
-use std::error;
-use std::fmt;
+use super::action::Action;
 
-use snafu::ResultExt as _;
-
-use super::action;
-
-pub trait Rules<T, A> {
-    type Error: error::Error + Sized + 'static;
-
-    fn check_rules(&self, target: &T, action: &A) -> Result<(), Self::Error>;
-}
-
-#[derive(Debug, snafu::Snafu)]
-pub enum Error<E, U, A>
+pub trait Rules<A, T>
 where
-    E: error::Error + 'static,
-    U: error::Error + 'static,
-    A: fmt::Debug + 'static,
+    A: Action<T>,
 {
-    Invalid { source: E, action: A },
-    Underlying { source: U, action: A },
-}
+    type State<'a>;
 
-#[derive(Debug, Clone)]
-pub struct RulesGuard<R, T> {
-    rules: R,
-    inner: T,
-}
+    fn valid_actions<'a, 'b>(&'a self, state: Self::State<'b>) -> Vec<A>;
 
-impl<R, T> Default for RulesGuard<R, T>
-where
-    R: Default,
-    T: Default,
-{
-    fn default() -> Self {
-        RulesGuard {
-            rules: Default::default(),
-            inner: Default::default(),
-        }
-    }
-}
-
-impl<R, T, A> action::Action<RulesGuard<R, T>> for A
-where
-    R: Rules<T, A>,
-    T: action::Actionable<A>,
-    A: action::Action<T> + 'static,
-{
-    type Error = Error<R::Error, T::Error, A>;
-
-    fn apply_to(self, target: &mut RulesGuard<R, T>) -> Result<(), Self::Error> {
-        target
-            .rules
-            .check_rules(&target.inner, &self)
-            .context(Invalid {
-                action: self.clone(),
-            })?;
-
-        // Make a clone so we have the original to return in case of an error.
-        let clone = self.clone();
-        target
-            .inner
-            .apply(clone)
-            .context(Underlying { action: self })
+    fn is_valid_action<'a, 'b>(&'a self, state: Self::State<'b>, action: A) -> bool
+    where
+        A: Eq,
+    {
+        self.valid_actions(state).into_iter().any(|a| a.eq(&action))
     }
 }
