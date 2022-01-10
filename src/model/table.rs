@@ -103,7 +103,7 @@ impl Table {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Action {
     Deal(PileId, card::Facing),
     Draw(usize),
@@ -112,7 +112,7 @@ pub enum Action {
 }
 
 impl<'a> action::Action<Table> for Action {
-    fn apply_to(self, mut table: Table) -> Table {
+    fn apply_to(self, table: &mut Table) {
         match self {
             Self::Deal(target_pile_id, facing) => {
                 let mut card = table.stock.take_top();
@@ -140,8 +140,6 @@ impl<'a> action::Action<Table> for Action {
                     .flip_top_to(card::Facing::FaceUp);
             }
         }
-
-        table
     }
 }
 

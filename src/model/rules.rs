@@ -8,10 +8,10 @@ where
 
     fn valid_actions<'a, 'b>(&'a self, state: Self::State<'b>) -> Vec<A>;
 
-    fn is_valid_action<'a, 'b>(&'a self, state: Self::State<'b>, action: A) -> bool
+    fn is_valid_action<'a, 'b>(&'a self, state: Self::State<'b>, action: &'b A) -> bool
     where
         A: Eq,
     {
-        self.valid_actions(state).into_iter().any(|a| a.eq(&action))
+        self.valid_actions(state).into_iter().any(|a| a.eq(action))
     }
 }

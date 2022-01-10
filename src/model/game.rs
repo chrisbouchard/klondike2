@@ -1,5 +1,3 @@
-use std::mem;
-
 use super::action::Actionable as _;
 
 use super::action;
@@ -24,7 +22,7 @@ impl<R> Game<R> {
         &self.rules
     }
 
-    pub fn state<'a>(&'a self) -> GameState<'a> {
+    pub fn state(&self) -> GameState<'_> {
         GameState {
             started: self.is_started(),
             table: self.table(),
@@ -40,7 +38,6 @@ impl<R> Game<R> {
     }
 }
 
-#[rustfmt::skip]
 impl<R> Game<R>
 where
     R: for<'a> rules::Rules<table::Action, table::Table, State<'a> = GameState<'a>>,
@@ -55,18 +52,12 @@ where
     }
 }
 
-#[rustfmt::skip]
 impl<R> action::Action<Game<R>> for table::Action
 where
     R: for<'a> rules::Rules<table::Action, table::Table, State<'a> = GameState<'a>>,
 {
-    fn apply_to(self, mut target: Game<R>) -> Game<R> {
-        assert!(target.rules.is_valid_action(target.state(), self.clone()));
-
-        let mut table = mem::take(&mut target.table);
-        table = table.apply(self);
-        target.table = table;
-
-        target
+    fn apply_to(self, target: &mut Game<R>) {
+        assert!(target.rules.is_valid_action(target.state(), &self));
+        target.table.apply(self);
     }
 }
