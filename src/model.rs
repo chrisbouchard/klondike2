@@ -6,7 +6,6 @@ pub mod card;
 pub mod dealer;
 pub mod deck;
 pub mod game;
-pub mod klondike_rules;
 pub mod pile;
 pub mod rules;
 pub mod table;

@@ -5,8 +5,8 @@ use super::rules;
 use super::table;
 
 #[derive(Debug, Clone)]
-pub struct Game<R> {
-    rules: R,
+pub struct Game {
+    rules: rules::Rules,
     started: bool,
     table: table::Table,
 }
@@ -17,8 +17,21 @@ pub struct GameState<'a> {
     pub table: &'a table::Table,
 }
 
-impl<R> Game<R> {
-    pub fn rules(&self) -> &R {
+impl Game {
+    // TODO: Possibly replace with a builder
+    pub fn new(rules: rules::Rules, table: table::Table) -> Self {
+        Self {
+            rules,
+            table,
+            started: false,
+        }
+    }
+
+    pub fn is_started(&self) -> bool {
+        self.started
+    }
+
+    pub fn rules(&self) -> &rules::Rules {
         &self.rules
     }
 
@@ -32,31 +45,10 @@ impl<R> Game<R> {
     pub fn table(&self) -> &table::Table {
         &self.table
     }
-
-    pub fn is_started(&self) -> bool {
-        self.started
-    }
 }
 
-impl<R> Game<R>
-where
-    R: for<'a> rules::Rules<table::Action, table::Table, State<'a> = GameState<'a>>,
-{
-    // TODO: Possibly replace with a builder
-    pub fn new(rules: R, table: table::Table) -> Self {
-        Self {
-            rules,
-            table,
-            started: false,
-        }
-    }
-}
-
-impl<R> action::Action<Game<R>> for table::Action
-where
-    R: for<'a> rules::Rules<table::Action, table::Table, State<'a> = GameState<'a>>,
-{
-    fn apply_to(self, target: &mut Game<R>) {
+impl action::Action<Game> for table::Action {
+    fn apply_to(self, target: &mut Game) {
         assert!(target.rules.is_valid_action(target.state(), &self));
         target.table.apply(self);
     }
