@@ -1,7 +1,3 @@
-use enum_like::EnumValues as _;
-use itertools::Itertools as _;
-
-use super::card;
 use super::table;
 
 #[derive(Clone, Copy, Debug)]
@@ -41,7 +37,6 @@ impl Rules {
     fn pregame_actions(&self) -> impl IntoIterator<Item = table::Action> {
         (0..self.options.tableaux_width)
             .map(table::PileId::Tableaux)
-            .cartesian_product(card::Facing::values())
-            .map(|(target_pile_id, facing)| table::Action::Deal(target_pile_id, facing))
+            .map(table::Action::Deal)
     }
 }

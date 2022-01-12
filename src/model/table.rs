@@ -105,7 +105,7 @@ impl Table {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Action {
-    Deal(PileId, card::Facing),
+    Deal(PileId),
     Draw(usize),
     Move(PileId, PileId, usize),
     Reveal(PileId),
@@ -114,9 +114,8 @@ pub enum Action {
 impl<'a> action::Action<Table> for Action {
     fn apply_to(self, table: &mut Table) {
         match self {
-            Self::Deal(target_pile_id, facing) => {
-                let mut card = table.stock.take_top();
-                card.flip_top_to(facing);
+            Self::Deal(target_pile_id) => {
+                let card = table.stock.take_top();
                 table.pile_mut(target_pile_id).place_cards(card);
             }
             Self::Draw(count) => {

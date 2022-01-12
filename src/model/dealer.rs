@@ -1,4 +1,3 @@
-use super::card;
 use super::table;
 
 #[derive(Debug)]
@@ -133,7 +132,7 @@ impl DealerState {
         match self {
             &Self::Deal(current_position) => {
                 let pile_id = table::PileId::Tableaux(current_position.tableaux_index());
-                Some(table::Action::Deal(pile_id, card::Facing::FaceDown))
+                Some(table::Action::Deal(pile_id))
             }
             &Self::Reveal(current_position) => {
                 let pile_id = table::PileId::Tableaux(current_position.tableaux_index());
@@ -172,9 +171,8 @@ mod tests {
 
         assert_matches!(
             dealer_iter.next(),
-            Some(table::Action::Deal(pile_id, facing)) => {
+            Some(table::Action::Deal(pile_id)) => {
                 assert_eq!(pile_id, table::PileId::Tableaux(0));
-                assert_eq!(facing, card::Facing::FaceDown);
             }
         );
     }
@@ -214,9 +212,8 @@ mod tests {
         for expected_index in 0..tableaux_width {
             assert_matches!(
                 dealer_iter.next(),
-                Some(table::Action::Deal(pile_id, facing)) => {
+                Some(table::Action::Deal(pile_id)) => {
                     assert_eq!(pile_id, table::PileId::Tableaux(expected_index));
-                    assert_eq!(facing, card::Facing::FaceDown);
                 }
             );
         }
@@ -243,9 +240,8 @@ mod tests {
         for expected_index in expected_indices {
             assert_matches!(
                 dealer_iter.next(),
-                Some(table::Action::Deal(pile_id, facing)) => {
+                Some(table::Action::Deal(pile_id)) => {
                     assert_eq!(pile_id, table::PileId::Tableaux(expected_index));
-                    assert_eq!(facing, card::Facing::FaceDown);
                 }
             );
         }
