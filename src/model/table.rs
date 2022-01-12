@@ -1,3 +1,5 @@
+use std::iter;
+
 use enum_like::EnumValues as _;
 
 use super::action;
@@ -47,7 +49,7 @@ pub struct Table {
 }
 
 impl Table {
-    pub fn new<I>(cards: I) -> Self
+    pub fn new_with_cards<I>(cards: I) -> Self
     where
         I: IntoIterator<Item = card::Card>,
     {
@@ -100,6 +102,15 @@ impl Table {
                 &mut self.tableaux[index]
             }
         }
+    }
+}
+
+impl iter::FromIterator<card::Card> for Table {
+    fn from_iter<I>(iter: I) -> Self
+    where
+        I: IntoIterator<Item = card::Card>,
+    {
+        Self::new_with_cards(iter)
     }
 }
 
@@ -321,7 +332,7 @@ mod tests {
 
     #[test]
     fn new_should_not_panic() {
-        Table::new([]);
+        Table::new_with_cards([]);
     }
 
     #[test_case(PileId::Stock => true; "Stock")]
@@ -334,7 +345,7 @@ mod tests {
     #[test_case(PileId::Tableaux(6) => true; "Tableaux Index 6")]
     #[test_case(PileId::Tableaux(99) => true; "Tableaux Index 99")]
     fn new_should_create_empty_table(pile_id: PileId) -> bool {
-        let table = Table::new([]);
+        let table = Table::new_with_cards([]);
         table.pile(pile_id).is_empty()
     }
 }

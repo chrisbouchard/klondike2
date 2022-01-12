@@ -1,14 +1,12 @@
 use std::iter;
 use std::mem;
-use std::slice;
-use std::vec;
 
 use itertools::Itertools as _;
 
 use super::card;
 
-pub type Iter<'a> = slice::Iter<'a, card::Card>;
-pub type IntoIter = vec::IntoIter<card::Card>;
+pub type Iter<'a> = <&'a [card::Card] as IntoIterator>::IntoIter;
+pub type IntoIter = <Vec<card::Card> as IntoIterator>::IntoIter;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Pile {
@@ -160,7 +158,10 @@ impl<'a> IntoIterator for &'a Pile {
 }
 
 impl iter::FromIterator<card::Card> for Pile {
-    fn from_iter<T: IntoIterator<Item = card::Card>>(iter: T) -> Self {
+    fn from_iter<I>(iter: I) -> Self
+    where
+        I: IntoIterator<Item = card::Card>,
+    {
         Self::new_with_cards(iter)
     }
 }
