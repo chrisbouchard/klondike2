@@ -11,12 +11,6 @@ pub struct Game {
     table: table::Table,
 }
 
-#[derive(Clone, Copy, Debug)]
-pub struct GameState<'a> {
-    pub started: bool,
-    pub table: &'a table::Table,
-}
-
 impl Game {
     // TODO: Possibly replace with a builder
     pub fn new(rules: rules::Rules, table: table::Table) -> Self {
@@ -35,13 +29,6 @@ impl Game {
         &self.rules
     }
 
-    pub fn state(&self) -> GameState<'_> {
-        GameState {
-            started: self.is_started(),
-            table: self.table(),
-        }
-    }
-
     pub fn table(&self) -> &table::Table {
         &self.table
     }
@@ -49,7 +36,11 @@ impl Game {
 
 impl action::Action<Game> for table::Action {
     fn apply_to(self, target: &mut Game) {
-        assert!(target.rules.is_valid_action(target.state(), &self));
+        let state = rules::RuleState {
+            started: target.is_started(),
+            table: target.table(),
+        };
+        assert!(target.rules.is_valid_action(state, &self));
         target.table.apply(self);
     }
 }

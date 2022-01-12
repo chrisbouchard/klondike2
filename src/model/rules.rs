@@ -2,13 +2,18 @@ use enum_like::EnumValues as _;
 use itertools::Itertools as _;
 
 use super::card;
-use super::game;
 use super::table;
 
 #[derive(Clone, Copy, Debug)]
 pub struct RuleOptions {
     pub allow_move_from_foundation: bool,
     pub tableaux_width: usize,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct RuleState<'a> {
+    pub started: bool,
+    pub table: &'a table::Table,
 }
 
 #[derive(Clone, Debug)]
@@ -21,7 +26,7 @@ impl Rules {
         Self { options }
     }
 
-    pub fn valid_actions(&self, state: game::GameState<'_>) -> Vec<table::Action> {
+    pub fn valid_actions(&self, state: RuleState<'_>) -> Vec<table::Action> {
         if state.started {
             vec![]
         } else {
@@ -29,7 +34,7 @@ impl Rules {
         }
     }
 
-    pub fn is_valid_action(&self, state: game::GameState<'_>, action: &table::Action) -> bool {
+    pub fn is_valid_action(&self, state: RuleState<'_>, action: &table::Action) -> bool {
         self.valid_actions(state).into_iter().any(|a| a.eq(action))
     }
 
