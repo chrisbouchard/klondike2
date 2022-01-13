@@ -12,6 +12,12 @@ pub struct Game {
     table: table::Table,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum GameAction {
+    Clear,
+    Start,
+}
+
 impl Game {
     // TODO: Possibly replace with a builder
     pub fn new(rules: rules::Rules, shuffle: &mut dyn deck::Shuffle) -> Self {
@@ -51,5 +57,21 @@ impl action::Action<Game> for table::Action {
         };
         assert!(target.rules.is_valid_action(state, &self));
         target.table.apply(self);
+    }
+}
+
+impl action::Action<Game> for GameAction {
+    fn apply_to(self, target: &mut Game) {
+        match self {
+            Self::Clear => {
+                // TODO: Use a shuffled deck.
+                let deck = deck::Deck::new();
+                target.table = table::Table::new_with_cards(deck);
+                target.started = false;
+            }
+            Self::Start => {
+                target.started = true;
+            }
+        }
     }
 }
