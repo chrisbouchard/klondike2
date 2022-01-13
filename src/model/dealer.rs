@@ -1,6 +1,6 @@
 use super::table;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Dealer {
     tableaux_width: usize,
 }
@@ -15,6 +15,7 @@ impl Dealer {
     }
 }
 
+#[derive(Debug)]
 pub struct Iter {
     tableaux_width: usize,
     state: DealerState,

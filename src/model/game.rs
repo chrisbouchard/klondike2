@@ -1,13 +1,17 @@
 use super::action::Actionable as _;
 
 use super::action;
+use super::dealer;
 use super::deck;
 use super::rules;
 use super::table;
 
-#[derive(Debug, Clone)]
-pub struct Game {
+#[derive(Debug)]
+pub struct Game<S> {
+    dealer: dealer::Dealer,
+    dealer_iter: dealer::Iter,
     rules: rules::Rules,
+    shuffle: S,
     started: bool,
     table: table::Table,
 }
@@ -15,17 +19,26 @@ pub struct Game {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum GameAction {
     Clear,
+    Deal,
     Start,
 }
 
-impl Game {
+impl<S> Game<S>
+where
+    S: deck::Shuffle,
+{
     // TODO: Possibly replace with a builder
-    pub fn new(rules: rules::Rules, shuffle: &mut dyn deck::Shuffle) -> Self {
-        let deck = deck::Deck::new_shuffled(shuffle);
+    pub fn new(dealer: dealer::Dealer, rules: rules::Rules, mut shuffle: S) -> Self {
+        let dealer_iter = dealer.deal_cards();
+
+        let deck = deck::Deck::new_shuffled(&mut shuffle);
         let table = table::Table::new_with_cards(deck);
 
         Self {
+            dealer,
+            dealer_iter,
             rules,
+            shuffle,
             table,
             started: false,
         }
@@ -42,15 +55,13 @@ impl Game {
     pub fn table(&self) -> &table::Table {
         &self.table
     }
-
-    pub fn restart(&mut self, shuffle: &mut dyn deck::Shuffle) {
-        let deck = deck::Deck::new_shuffled(shuffle);
-        self.table = table::Table::new_with_cards(deck);
-    }
 }
 
-impl action::Action<Game> for table::Action {
-    fn apply_to(self, target: &mut Game) {
+impl<S> action::Action<Game<S>> for table::Action
+where
+    S: deck::Shuffle,
+{
+    fn apply_to(self, target: &mut Game<S>) {
         let state = rules::RuleState {
             started: target.is_started(),
             table: target.table(),
@@ -60,14 +71,24 @@ impl action::Action<Game> for table::Action {
     }
 }
 
-impl action::Action<Game> for GameAction {
-    fn apply_to(self, target: &mut Game) {
+impl<S> action::Action<Game<S>> for GameAction
+where
+    S: deck::Shuffle,
+{
+    fn apply_to(self, target: &mut Game<S>) {
         match self {
             Self::Clear => {
-                // TODO: Use a shuffled deck.
-                let deck = deck::Deck::new();
+                target.dealer_iter = target.dealer.deal_cards();
+
+                let deck = deck::Deck::new_shuffled(&mut target.shuffle);
                 target.table = table::Table::new_with_cards(deck);
+
                 target.started = false;
+            }
+            Self::Deal => {
+                if let Some(table_action) = target.dealer_iter.next() {
+                    target.apply(table_action);
+                }
             }
             Self::Start => {
                 target.started = true;
