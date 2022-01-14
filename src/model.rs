@@ -8,4 +8,5 @@ pub mod deck;
 pub mod game;
 pub mod pile;
 pub mod rules;
+pub mod settings;
 pub mod table;

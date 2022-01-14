@@ -1,17 +1,11 @@
 use super::table;
 
 #[derive(Debug, Clone)]
-pub struct Dealer {
-    tableaux_width: usize,
-}
+pub struct Dealer;
 
 impl Dealer {
-    pub fn with_tableaux_width(tableaux_width: usize) -> Self {
-        Self { tableaux_width }
-    }
-
-    pub fn deal_cards(&self) -> Iter {
-        Iter::new(self.tableaux_width)
+    pub fn deal_cards(&self, tableaux_width: usize) -> Iter {
+        Iter::new(tableaux_width)
     }
 }
 
@@ -167,8 +161,8 @@ mod tests {
 
     #[test]
     fn dealer_should_deal_next_card() {
-        let dealer = Dealer::with_tableaux_width(7);
-        let mut dealer_iter = dealer.deal_cards();
+        let dealer = Dealer;
+        let mut dealer_iter = dealer.deal_cards(7);
 
         assert_matches!(
             dealer_iter.next(),
@@ -180,13 +174,13 @@ mod tests {
 
     #[test]
     fn dealer_should_eventually_finish() {
-        let dealer = Dealer::with_tableaux_width(7);
+        let dealer = Dealer;
 
         // Expected to deal 7 + 6 + ... + 1, then reveal 7.
         let expected_length = (1..=7).sum::<usize>() + 7;
 
         // Skip ahead the expected amount.
-        let mut dealer_iter = dealer.deal_cards().skip(expected_length);
+        let mut dealer_iter = dealer.deal_cards(7).skip(expected_length);
 
         // Iterator should end on the next call.
         assert_matches!(dealer_iter.next(), None);
@@ -194,8 +188,8 @@ mod tests {
 
     #[test]
     fn dealer_with_no_tableaux_should_finish() {
-        let dealer = Dealer::with_tableaux_width(0);
-        let mut dealer_iter = dealer.deal_cards();
+        let dealer = Dealer;
+        let mut dealer_iter = dealer.deal_cards(0);
 
         assert_matches!(dealer_iter.next(), None);
     }
@@ -206,8 +200,8 @@ mod tests {
     #[test_case(52; "tableaux_width = 52")]
     #[test_case(1000; "tableaux_width = 1000")]
     fn dealer_should_deal_first_row(tableaux_width: usize) {
-        let dealer = Dealer::with_tableaux_width(tableaux_width);
-        let mut dealer_iter = dealer.deal_cards();
+        let dealer = Dealer;
+        let mut dealer_iter = dealer.deal_cards(tableaux_width);
 
         // Should deal 0 through (tableaux_width - 1)
         for expected_index in 0..tableaux_width {
@@ -235,8 +229,8 @@ mod tests {
     #[test_case(52, velcro::vec![..(0..=51)]; "tableaux_width = 52")]
     #[test_case(1000, velcro::vec![..(0..=51)]; "tableaux_width = 1000")]
     fn dealer_should_deal_full_tableaux(tableaux_width: usize, expected_indices: Vec<usize>) {
-        let dealer = Dealer::with_tableaux_width(tableaux_width);
-        let mut dealer_iter = dealer.deal_cards();
+        let dealer = Dealer;
+        let mut dealer_iter = dealer.deal_cards(tableaux_width);
 
         for expected_index in expected_indices {
             assert_matches!(
@@ -254,12 +248,12 @@ mod tests {
     #[test_case(52; "tableaux_width = 52")]
     #[test_case(1000; "tableaux_width = 1000")]
     fn dealer_should_reveal_top_cards(tableaux_width: usize) {
-        let dealer = Dealer::with_tableaux_width(tableaux_width);
+        let dealer = Dealer;
 
         let expected_cards_dealt = (1..=tableaux_width).sum();
 
         // Skip the actions already matched in `dealer_should_deal_full_tableaux`.
-        let mut dealer_iter = dealer.deal_cards().skip(expected_cards_dealt);
+        let mut dealer_iter = dealer.deal_cards(tableaux_width).skip(expected_cards_dealt);
 
         for expected_index in 0..tableaux_width {
             assert_matches!(

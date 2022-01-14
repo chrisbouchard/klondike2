@@ -1,32 +1,21 @@
-use super::table;
+use super::{settings, table};
 
-#[derive(Clone, Copy, Debug)]
-pub struct RuleOptions {
-    pub allow_move_from_foundation: bool,
-    pub tableaux_width: usize,
-}
-
-#[derive(Clone, Copy, Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct RuleState<'a> {
+    pub settings: &'a settings::Settings,
     pub started: bool,
     pub table: &'a table::Table,
 }
 
-#[derive(Clone, Debug)]
-pub struct Rules {
-    options: RuleOptions,
-}
+#[derive(Debug, Clone, Default)]
+pub struct Rules;
 
 impl Rules {
-    pub const fn new(options: RuleOptions) -> Self {
-        Self { options }
-    }
-
     pub fn valid_actions(&self, state: RuleState<'_>) -> Vec<table::Action> {
         if state.started {
             vec![]
         } else {
-            velcro::vec![..self.pregame_actions()]
+            velcro::vec![..self.pregame_actions(state)]
         }
     }
 
@@ -34,8 +23,8 @@ impl Rules {
         self.valid_actions(state).into_iter().any(|a| a.eq(action))
     }
 
-    fn pregame_actions(&self) -> impl IntoIterator<Item = table::Action> {
-        (0..self.options.tableaux_width)
+    fn pregame_actions(&self, state: RuleState<'_>) -> impl IntoIterator<Item = table::Action> {
+        (0..state.settings.tableaux_width)
             .map(table::PileId::Tableaux)
             .map(table::Action::Deal)
     }
