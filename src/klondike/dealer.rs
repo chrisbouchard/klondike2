@@ -1,9 +1,11 @@
-use crate::model::{dealer, deck, game, table};
+use crate::model;
+
+use super::game;
 
 #[derive(Debug, Clone)]
 pub struct KlondikeDealer;
 
-impl dealer::Dealer<table::Action> for KlondikeDealer {
+impl model::dealer::Dealer<model::table::Action> for KlondikeDealer {
     type Context<'a> = KlondikeDealerContext;
     type Iter = KlondikeDealerIter;
 
@@ -17,12 +19,11 @@ pub struct KlondikeDealerContext {
     tableaux_width: usize,
 }
 
-impl<'a, D, S> From<&'a game::Game<D, S>> for KlondikeDealerContext
+impl<'a, S> From<&'a game::KlondikeGame<S>> for KlondikeDealerContext
 where
-    D: dealer::Dealer<table::Action>,
-    S: deck::Shuffle,
+    S: model::deck::Shuffle,
 {
-    fn from(game: &'a game::Game<D, S>) -> Self {
+    fn from(game: &'a game::KlondikeGame<S>) -> Self {
         Self {
             tableaux_width: game.settings().tableaux_width,
         }
@@ -47,7 +48,7 @@ impl KlondikeDealerIter {
 }
 
 impl Iterator for KlondikeDealerIter {
-    type Item = table::Action;
+    type Item = model::table::Action;
 
     fn next(&mut self) -> Option<Self::Item> {
         let action = self.state.action();
@@ -143,15 +144,15 @@ impl DealerIterState {
         }
     }
 
-    fn action(&self) -> Option<table::Action> {
+    fn action(&self) -> Option<model::table::Action> {
         match self {
             &Self::Deal(current_position) => {
-                let pile_id = table::PileId::Tableaux(current_position.tableaux_index());
-                Some(table::Action::Deal(pile_id))
+                let pile_id = model::table::PileId::Tableaux(current_position.tableaux_index());
+                Some(model::table::Action::Deal(pile_id))
             }
             &Self::Reveal(current_position) => {
-                let pile_id = table::PileId::Tableaux(current_position.tableaux_index());
-                Some(table::Action::Reveal(pile_id))
+                let pile_id = model::table::PileId::Tableaux(current_position.tableaux_index());
+                Some(model::table::Action::Reveal(pile_id))
             }
             Self::Done => None,
         }
@@ -189,8 +190,8 @@ mod tests {
 
         assert_matches!(
             dealer_iter.next(),
-            Some(table::Action::Deal(pile_id)) => {
-                assert_eq!(pile_id, table::PileId::Tableaux(0));
+            Some(model::table::Action::Deal(pile_id)) => {
+                assert_eq!(pile_id, model::table::PileId::Tableaux(0));
             }
         );
     }
@@ -233,8 +234,8 @@ mod tests {
         for expected_index in 0..tableaux_width {
             assert_matches!(
                 dealer_iter.next(),
-                Some(table::Action::Deal(pile_id)) => {
-                    assert_eq!(pile_id, table::PileId::Tableaux(expected_index));
+                Some(model::table::Action::Deal(pile_id)) => {
+                    assert_eq!(pile_id, model::table::PileId::Tableaux(expected_index));
                 }
             );
         }
@@ -262,8 +263,8 @@ mod tests {
         for expected_index in expected_indices {
             assert_matches!(
                 dealer_iter.next(),
-                Some(table::Action::Deal(pile_id)) => {
-                    assert_eq!(pile_id, table::PileId::Tableaux(expected_index));
+                Some(model::table::Action::Deal(pile_id)) => {
+                    assert_eq!(pile_id, model::table::PileId::Tableaux(expected_index));
                 }
             );
         }
@@ -286,8 +287,8 @@ mod tests {
         for expected_index in 0..tableaux_width {
             assert_matches!(
                 dealer_iter.next(),
-                Some(table::Action::Reveal(pile_id)) => {
-                    assert_eq!(pile_id, table::PileId::Tableaux(expected_index));
+                Some(model::table::Action::Reveal(pile_id)) => {
+                    assert_eq!(pile_id, model::table::PileId::Tableaux(expected_index));
                 }
             );
         }
