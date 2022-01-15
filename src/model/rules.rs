@@ -1,21 +1,8 @@
-// use super::table;
+use std::fmt;
 
-// #[derive(Debug, Clone, Copy)]
-// pub struct RuleState<'a, S> {
-//     pub settings: &'a S,
-//     pub started: bool,
-//     pub table: &'a table::Table,
-// }
+pub trait Rules<A>: Clone + fmt::Debug {
+    type Context<'a>;
+    type Error: 'static;
 
-#[derive(Debug, Clone, Default)]
-pub struct Rules;
-
-// impl Rules {
-//     pub fn valid_actions(&self, state: RuleState<'_>) -> Vec<table::Action> {
-//         todo!()
-//     }
-//
-//     pub fn is_valid_action(&self, state: RuleState<'_>, action: &table::Action) -> bool {
-//         todo!()
-//     }
-// }
+    fn is_valid(&self, action: &A, context: Self::Context<'_>) -> Result<(), Self::Error>;
+}

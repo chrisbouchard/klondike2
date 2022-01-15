@@ -3,13 +3,13 @@ use super::action::Actionable as _;
 use super::{action, dealer, deck, rules, table};
 
 #[derive(Debug, Clone)]
-pub struct Game<D, S, SH>
+pub struct Game<D, R, S, SH>
 where
     D: dealer::Dealer<table::Action>,
 {
     dealer: D,
     dealer_iter: Option<D::Iter>,
-    rules: rules::Rules,
+    rules: R,
     settings: S,
     shuffle: SH,
     started: bool,
@@ -23,13 +23,35 @@ pub enum GameAction {
     Start,
 }
 
-impl<'a, D, S, SH> Game<D, S, SH>
+impl<D, R, S, SH> Game<D, R, S, SH>
 where
     D: dealer::Dealer<table::Action>,
+{
+    pub fn is_started(&self) -> bool {
+        self.started
+    }
+
+    pub fn rules(&self) -> &R {
+        &self.rules
+    }
+
+    pub fn settings(&self) -> &S {
+        &self.settings
+    }
+
+    pub fn table(&self) -> &table::Table {
+        &self.table
+    }
+}
+
+impl<D, R, S, SH> Game<D, R, S, SH>
+where
+    D: dealer::Dealer<table::Action>,
+    R: rules::Rules<table::Action>,
     SH: deck::Shuffle,
 {
     // TODO: Possibly replace with a builder
-    pub fn new(dealer: D, rules: rules::Rules, settings: S, mut shuffle: SH) -> Self {
+    pub fn new(dealer: D, rules: R, settings: S, mut shuffle: SH) -> Self {
         let deck = deck::Deck::new_shuffled(&mut shuffle);
         let table = table::Table::new_with_cards(deck);
 
@@ -43,47 +65,31 @@ where
             started: false,
         }
     }
-
-    pub fn is_started(&self) -> bool {
-        self.started
-    }
-
-    pub fn rules(&self) -> &rules::Rules {
-        &self.rules
-    }
-
-    pub fn settings(&self) -> &S {
-        &self.settings
-    }
-
-    pub fn table(&self) -> &table::Table {
-        &self.table
-    }
 }
 
-impl<D, S, SH> action::Action<Game<D, S, SH>> for table::Action
+impl<D, R, RC, S, SH> action::Action<Game<D, R, S, SH>> for table::Action
 where
     D: dealer::Dealer<table::Action>,
+    R: for<'a> rules::Rules<table::Action, Context<'a> = RC>,
+    RC: for<'a> From<&'a Game<D, R, S, SH>>,
     SH: deck::Shuffle,
 {
-    fn apply_to(self, target: &mut Game<D, S, SH>) {
-        // let state = rules::RuleState {
-        //     settings: &target.settings,
-        //     started: target.is_started(),
-        //     table: &target.table,
-        // };
-        // assert!(target.rules.is_valid_action(state, &self));
+    fn apply_to(self, target: &mut Game<D, R, S, SH>) {
+        let context: RC = (target as &Game<D, R, S, SH>).into();
+        assert!(target.rules.is_valid(&self, context).is_ok());
         target.table.apply(self);
     }
 }
 
-impl<C, D, S, SH> action::Action<Game<D, S, SH>> for GameAction
+impl<D, DC, R, RC, S, SH> action::Action<Game<D, R, S, SH>> for GameAction
 where
-    C: for<'a> From<&'a Game<D, S, SH>>,
-    D: for<'a> dealer::Dealer<table::Action, Context<'a> = C>,
+    DC: for<'a> From<&'a Game<D, R, S, SH>>,
+    D: for<'a> dealer::Dealer<table::Action, Context<'a> = DC>,
+    R: for<'a> rules::Rules<table::Action, Context<'a> = RC>,
+    RC: for<'a> From<&'a Game<D, R, S, SH>>,
     SH: deck::Shuffle,
 {
-    fn apply_to(self, target: &mut Game<D, S, SH>) {
+    fn apply_to(self, target: &mut Game<D, R, S, SH>) {
         match self {
             Self::Clear => {
                 target.dealer_iter = None;
@@ -96,11 +102,10 @@ where
             Self::Deal => {
                 let dealer = &target.dealer;
 
-                // We need to get a new dealer ready, because we can't borrow
-                // target.dealer while also mutably borrowing target.dealer_iter
-                // to call get_or_insert_with.
-                let new_dealer_iter = dealer.deal((target as &Game<D, S, SH>).into());
-                let dealer_iter = target.dealer_iter.get_or_insert(new_dealer_iter);
+                let context: DC = (target as &Game<D, R, S, SH>).into();
+                let dealer_iter = target
+                    .dealer_iter
+                    .get_or_insert_with(|| dealer.deal(context));
 
                 if let Some(table_action) = dealer_iter.next() {
                     target.apply(table_action);
