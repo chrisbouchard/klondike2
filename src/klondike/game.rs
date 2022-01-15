@@ -1,5 +1,5 @@
 use crate::model;
 
-use super::dealer;
+use super::{dealer, settings};
 
-pub type KlondikeGame<S> = model::game::Game<dealer::KlondikeDealer, S>;
+pub type KlondikeGame<SH> = model::game::Game<dealer::KlondikeDealer, settings::Settings, SH>;
