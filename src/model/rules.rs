@@ -1,4 +1,6 @@
-use std::{convert, fmt};
+use std::fmt;
+
+use super::action::Actionable as _;
 
 use super::action;
 
@@ -7,34 +9,38 @@ pub trait Rules<A>: fmt::Debug + Clone {
     type Error: fmt::Debug + 'static;
 
     fn validate(&self, action: &A, context: Self::Context<'_>) -> Result<(), Self::Error>;
-
-    fn guard<T>(self, target: T) -> RulesGuard<Self, T> {
-        RulesGuard {
-            rules: self,
-            target,
-        }
-    }
 }
 
+#[derive(Debug, Clone)]
 pub struct RulesGuard<R, T> {
     rules: R,
     target: T,
 }
 
 impl<R, T> RulesGuard<R, T> {
+    pub fn new(rules: R, target: T) -> Self {
+        Self { rules, target }
+    }
+
     pub fn apply_guarded<A>(&mut self, action: A, context: R::Context<'_>) -> Result<(), R::Error>
     where
         A: action::Action<T>,
         R: Rules<A>,
     {
         self.rules.validate(&action, context)?;
-        action.apply_to(&mut self.target);
+        self.target.apply(action);
         Ok(())
     }
-}
 
-impl<R, T> convert::AsRef<T> for RulesGuard<R, T> {
-    fn as_ref(&self) -> &T {
+    pub fn rules(&self) -> &R {
+        &self.rules
+    }
+
+    pub fn target(&self) -> &T {
         &self.target
+    }
+
+    pub fn set_target(&mut self, target: T) {
+        self.target = target;
     }
 }

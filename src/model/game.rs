@@ -1,4 +1,4 @@
-use super::action::{Action, Actionable as _};
+use super::action::Actionable as _;
 
 use super::{action, dealer, deck, rules, table};
 
@@ -9,11 +9,10 @@ where
 {
     dealer: D,
     dealer_iter: Option<D::Iter>,
-    rules: R,
     settings: S,
     shuffle: SH,
     started: bool,
-    table: T,
+    table_guard: rules::RulesGuard<R, T>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -35,7 +34,7 @@ where
     }
 
     pub fn rules(&self) -> &R {
-        &self.rules
+        &self.table_guard.rules()
     }
 
     pub fn settings(&self) -> &S {
@@ -43,7 +42,7 @@ where
     }
 
     pub fn table(&self) -> &T {
-        &self.table
+        &self.table_guard.target()
     }
 }
 
@@ -58,12 +57,13 @@ where
         let deck = deck::Deck::new_shuffled(&mut shuffle);
         let table = table::Table::new_with_cards(deck);
 
+        let table_guarded = rules::RulesGuard::new(rules, table);
+
         Self {
             dealer,
-            rules,
             settings,
             shuffle,
-            table,
+            table_guard: table_guarded,
             dealer_iter: None,
             started: false,
         }
@@ -72,7 +72,7 @@ where
 
 impl<A, D, R, RC, S, SH, T> action::Action<Game<D, R, S, SH, T>> for TableAction<A>
 where
-    A: Action<T>,
+    A: action::Action<T>,
     D: dealer::Dealer,
     R: for<'a> rules::Rules<A, Context<'a> = RC>,
     RC: for<'a> From<&'a Game<D, R, S, SH, T>>,
@@ -82,14 +82,13 @@ where
     fn apply_to(self, target: &mut Game<D, R, S, SH, T>) {
         let TableAction(action) = self;
         let context: RC = (target as &Game<D, R, S, SH, T>).into();
-        assert!(target.rules.is_valid(&action, context).is_ok());
-        target.table.apply(action);
+        target.table_guard.apply_guarded(action, context).unwrap();
     }
 }
 
 impl<A, D, DC, R, RC, S, SH, T> action::Action<Game<D, R, S, SH, T>> for GameAction
 where
-    A: Action<T>,
+    A: action::Action<T>,
     D: for<'a> dealer::Dealer<Action = A, Context<'a> = DC>,
     DC: for<'a> From<&'a Game<D, R, S, SH, T>>,
     R: for<'a> rules::Rules<A, Context<'a> = RC>,
@@ -103,7 +102,9 @@ where
                 target.dealer_iter = None;
 
                 let deck = deck::Deck::new_shuffled(&mut target.shuffle);
-                target.table = table::Table::new_with_cards(deck);
+                target
+                    .table_guard
+                    .set_target(table::Table::new_with_cards(deck));
 
                 target.started = false;
             }
