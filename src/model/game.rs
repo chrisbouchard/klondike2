@@ -3,7 +3,7 @@ use super::action::Actionable as _;
 use super::{action, dealer, deck, rules, settings, table};
 
 #[derive(Debug, Clone)]
-pub struct Game<D, S>
+pub struct Game<D, SH>
 where
     D: dealer::Dealer<table::Action>,
 {
@@ -11,7 +11,7 @@ where
     dealer_iter: Option<D::Iter>,
     rules: rules::Rules,
     settings: settings::Settings,
-    shuffle: S,
+    shuffle: SH,
     started: bool,
     table: table::Table,
 }
@@ -23,17 +23,17 @@ pub enum GameAction {
     Start,
 }
 
-impl<'a, D, S> Game<D, S>
+impl<'a, D, SH> Game<D, SH>
 where
     D: dealer::Dealer<table::Action>,
-    S: deck::Shuffle,
+    SH: deck::Shuffle,
 {
     // TODO: Possibly replace with a builder
     pub fn new(
         dealer: D,
         rules: rules::Rules,
         settings: settings::Settings,
-        mut shuffle: S,
+        mut shuffle: SH,
     ) -> Self {
         let deck = deck::Deck::new_shuffled(&mut shuffle);
         let table = table::Table::new_with_cards(deck);
@@ -66,12 +66,12 @@ where
     }
 }
 
-impl<D, S> action::Action<Game<D, S>> for table::Action
+impl<D, SH> action::Action<Game<D, SH>> for table::Action
 where
     D: dealer::Dealer<table::Action>,
-    S: deck::Shuffle,
+    SH: deck::Shuffle,
 {
-    fn apply_to(self, target: &mut Game<D, S>) {
+    fn apply_to(self, target: &mut Game<D, SH>) {
         let state = rules::RuleState {
             settings: &target.settings,
             started: target.is_started(),
@@ -82,13 +82,13 @@ where
     }
 }
 
-impl<C, D, S> action::Action<Game<D, S>> for GameAction
+impl<C, D, SH> action::Action<Game<D, SH>> for GameAction
 where
-    C: for<'a> From<&'a Game<D, S>>,
+    C: for<'a> From<&'a Game<D, SH>>,
     D: for<'a> dealer::Dealer<table::Action, Context<'a> = C>,
-    S: deck::Shuffle,
+    SH: deck::Shuffle,
 {
-    fn apply_to(self, target: &mut Game<D, S>) {
+    fn apply_to(self, target: &mut Game<D, SH>) {
         match self {
             Self::Clear => {
                 target.dealer_iter = None;
@@ -104,7 +104,7 @@ where
                 // We need to get a new dealer ready, because we can't borrow
                 // target.dealer while also mutably borrowing target.dealer_iter
                 // to call get_or_insert_with.
-                let new_dealer_iter = dealer.deal((target as &Game<D, S>).into());
+                let new_dealer_iter = dealer.deal((target as &Game<D, SH>).into());
                 let dealer_iter = target.dealer_iter.get_or_insert(new_dealer_iter);
 
                 if let Some(table_action) = dealer_iter.next() {
