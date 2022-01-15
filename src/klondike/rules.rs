@@ -26,7 +26,7 @@ impl model::rules::Rules<table::KlondikeTableAction> for KlondikeRules {
     type Context<'a> = KlondikeRulesContext<'a>;
     type Error = ();
 
-    fn is_valid(
+    fn validate(
         &self,
         action: &table::KlondikeTableAction,
         context: Self::Context<'_>,
