@@ -44,3 +44,23 @@ impl<R, T> RulesGuard<R, T> {
         self.target = target;
     }
 }
+
+#[derive(Debug, Clone)]
+pub struct CompoundRules<R> {
+    rules: Vec<R>,
+}
+
+impl<A, R> Rules<A> for CompoundRules<R>
+where
+    R: Rules<A>,
+{
+    type Context<'a> = R::Context<'a>;
+    type Error = R::Error;
+
+    fn validate(&self, action: &A, context: &Self::Context<'_>) -> Result<(), Self::Error> {
+        self.rules
+            .iter()
+            .map(|rules| rules.validate(action, context))
+            .collect()
+    }
+}
