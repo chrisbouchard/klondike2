@@ -1,11 +1,12 @@
 use crate::model;
 
-use super::game;
+use super::{game, table};
 
 #[derive(Debug, Clone)]
 pub struct KlondikeDealer;
 
-impl model::dealer::Dealer<model::table::Action> for KlondikeDealer {
+impl model::dealer::Dealer for KlondikeDealer {
+    type Action = table::KlondikeTableAction;
     type Context<'a> = KlondikeDealerContext;
     type Iter = KlondikeDealerIter;
 
@@ -48,7 +49,7 @@ impl KlondikeDealerIter {
 }
 
 impl Iterator for KlondikeDealerIter {
-    type Item = model::table::Action;
+    type Item = table::KlondikeTableAction;
 
     fn next(&mut self) -> Option<Self::Item> {
         let action = self.state.action();
@@ -144,15 +145,15 @@ impl DealerIterState {
         }
     }
 
-    fn action(&self) -> Option<model::table::Action> {
+    fn action(&self) -> Option<table::KlondikeTableAction> {
         match self {
             &Self::Deal(current_position) => {
-                let pile_id = model::table::PileId::Tableaux(current_position.tableaux_index());
-                Some(model::table::Action::Deal(pile_id))
+                let pile_id = table::KlondikePileId::Tableaux(current_position.tableaux_index());
+                Some(table::KlondikeTableAction::Deal(pile_id))
             }
             &Self::Reveal(current_position) => {
-                let pile_id = model::table::PileId::Tableaux(current_position.tableaux_index());
-                Some(model::table::Action::Reveal(pile_id))
+                let pile_id = table::KlondikePileId::Tableaux(current_position.tableaux_index());
+                Some(table::KlondikeTableAction::Reveal(pile_id))
             }
             Self::Done => None,
         }
@@ -190,8 +191,8 @@ mod tests {
 
         assert_matches!(
             dealer_iter.next(),
-            Some(model::table::Action::Deal(pile_id)) => {
-                assert_eq!(pile_id, model::table::PileId::Tableaux(0));
+            Some(table::KlondikeTableAction::Deal(pile_id)) => {
+                assert_eq!(pile_id, table::KlondikePileId::Tableaux(0));
             }
         );
     }
@@ -234,8 +235,8 @@ mod tests {
         for expected_index in 0..tableaux_width {
             assert_matches!(
                 dealer_iter.next(),
-                Some(model::table::Action::Deal(pile_id)) => {
-                    assert_eq!(pile_id, model::table::PileId::Tableaux(expected_index));
+                Some(table::KlondikeTableAction::Deal(pile_id)) => {
+                    assert_eq!(pile_id, table::KlondikePileId::Tableaux(expected_index));
                 }
             );
         }
@@ -263,8 +264,8 @@ mod tests {
         for expected_index in expected_indices {
             assert_matches!(
                 dealer_iter.next(),
-                Some(model::table::Action::Deal(pile_id)) => {
-                    assert_eq!(pile_id, model::table::PileId::Tableaux(expected_index));
+                Some(table::KlondikeTableAction::Deal(pile_id)) => {
+                    assert_eq!(pile_id, table::KlondikePileId::Tableaux(expected_index));
                 }
             );
         }
@@ -287,8 +288,8 @@ mod tests {
         for expected_index in 0..tableaux_width {
             assert_matches!(
                 dealer_iter.next(),
-                Some(model::table::Action::Reveal(pile_id)) => {
-                    assert_eq!(pile_id, model::table::PileId::Tableaux(expected_index));
+                Some(table::KlondikeTableAction::Reveal(pile_id)) => {
+                    assert_eq!(pile_id, table::KlondikePileId::Tableaux(expected_index));
                 }
             );
         }

@@ -1,4 +1,6 @@
-pub trait Action<T> {
+use std::fmt;
+
+pub trait Action<T>: fmt::Debug + Clone {
     fn apply_to(self, target: &mut T);
 }
 

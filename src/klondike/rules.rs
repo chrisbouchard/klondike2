@@ -1,6 +1,6 @@
 use crate::model;
 
-use super::{game, settings};
+use super::{game, settings, table};
 
 #[derive(Debug, Clone, Default)]
 pub struct KlondikeRules;
@@ -9,7 +9,7 @@ pub struct KlondikeRules;
 pub struct KlondikeRulesContext<'a> {
     settings: &'a settings::Settings,
     started: bool,
-    table: &'a model::table::Table,
+    table: &'a table::KlondikeTable,
 }
 
 impl<'a, SH> From<&'a game::KlondikeGame<SH>> for KlondikeRulesContext<'a> {
@@ -22,13 +22,13 @@ impl<'a, SH> From<&'a game::KlondikeGame<SH>> for KlondikeRulesContext<'a> {
     }
 }
 
-impl model::rules::Rules<model::table::Action> for KlondikeRules {
+impl model::rules::Rules<table::KlondikeTableAction> for KlondikeRules {
     type Context<'a> = KlondikeRulesContext<'a>;
     type Error = ();
 
     fn is_valid(
         &self,
-        action: &model::table::Action,
+        action: &table::KlondikeTableAction,
         context: Self::Context<'_>,
     ) -> Result<(), Self::Error> {
         todo!()
