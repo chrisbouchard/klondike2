@@ -1,16 +1,14 @@
 use super::action::Actionable as _;
 
-use super::action;
-use super::dealer;
-use super::deck;
-use super::rules;
-use super::settings;
-use super::table;
+use super::{action, dealer, deck, rules, settings, table};
 
-#[derive(Debug)]
-pub struct Game<S> {
-    dealer: dealer::Dealer,
-    dealer_iter: dealer::Iter,
+#[derive(Debug, Clone)]
+pub struct Game<D, S>
+where
+    D: dealer::Dealer<table::Action>,
+{
+    dealer: D,
+    dealer_iter: Option<D::Iter>,
     rules: rules::Rules,
     settings: settings::Settings,
     shuffle: S,
@@ -25,29 +23,28 @@ pub enum GameAction {
     Start,
 }
 
-impl<S> Game<S>
+impl<'a, D, S> Game<D, S>
 where
+    D: dealer::Dealer<table::Action>,
     S: deck::Shuffle,
 {
     // TODO: Possibly replace with a builder
     pub fn new(
-        dealer: dealer::Dealer,
+        dealer: D,
         rules: rules::Rules,
         settings: settings::Settings,
         mut shuffle: S,
     ) -> Self {
-        let dealer_iter = dealer.deal_cards(settings.tableaux_width);
-
         let deck = deck::Deck::new_shuffled(&mut shuffle);
         let table = table::Table::new_with_cards(deck);
 
         Self {
             dealer,
-            dealer_iter,
             rules,
             settings,
             shuffle,
             table,
+            dealer_iter: None,
             started: false,
         }
     }
@@ -69,11 +66,12 @@ where
     }
 }
 
-impl<S> action::Action<Game<S>> for table::Action
+impl<D, S> action::Action<Game<D, S>> for table::Action
 where
+    D: dealer::Dealer<table::Action>,
     S: deck::Shuffle,
 {
-    fn apply_to(self, target: &mut Game<S>) {
+    fn apply_to(self, target: &mut Game<D, S>) {
         let state = rules::RuleState {
             settings: &target.settings,
             started: target.is_started(),
@@ -84,14 +82,16 @@ where
     }
 }
 
-impl<S> action::Action<Game<S>> for GameAction
+impl<C, D, S> action::Action<Game<D, S>> for GameAction
 where
+    C: for<'a> From<&'a Game<D, S>>,
+    D: for<'a> dealer::Dealer<table::Action, Context<'a> = C>,
     S: deck::Shuffle,
 {
-    fn apply_to(self, target: &mut Game<S>) {
+    fn apply_to(self, target: &mut Game<D, S>) {
         match self {
             Self::Clear => {
-                target.dealer_iter = target.dealer.deal_cards(target.settings.tableaux_width);
+                target.dealer_iter = None;
 
                 let deck = deck::Deck::new_shuffled(&mut target.shuffle);
                 target.table = table::Table::new_with_cards(deck);
@@ -99,7 +99,15 @@ where
                 target.started = false;
             }
             Self::Deal => {
-                if let Some(table_action) = target.dealer_iter.next() {
+                let dealer = &target.dealer;
+
+                // We need to get a new dealer ready, because we can't borrow
+                // target.dealer while also mutably borrowing target.dealer_iter
+                // to call get_or_insert_with.
+                let new_dealer_iter = dealer.deal((target as &Game<D, S>).into());
+                let dealer_iter = target.dealer_iter.get_or_insert(new_dealer_iter);
+
+                if let Some(table_action) = dealer_iter.next() {
                     target.apply(table_action);
                 }
             }
