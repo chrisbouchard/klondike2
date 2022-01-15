@@ -82,7 +82,7 @@ where
     fn apply_to(self, target: &mut Game<D, R, S, SH, T>) {
         let TableAction(action) = self;
         let context: RC = (target as &Game<D, R, S, SH, T>).into();
-        target.table_guard.apply_guarded(action, context).unwrap();
+        target.table_guard.apply_guarded(action, &context).unwrap();
     }
 }
 

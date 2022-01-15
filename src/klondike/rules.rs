@@ -29,7 +29,7 @@ impl model::rules::Rules<table::KlondikeTableAction> for KlondikeRules {
     fn validate(
         &self,
         action: &table::KlondikeTableAction,
-        context: Self::Context<'_>,
+        context: &Self::Context<'_>,
     ) -> Result<(), Self::Error> {
         todo!()
     }

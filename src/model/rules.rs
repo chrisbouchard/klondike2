@@ -8,7 +8,7 @@ pub trait Rules<A>: fmt::Debug + Clone {
     type Context<'a>;
     type Error: fmt::Debug + 'static;
 
-    fn validate(&self, action: &A, context: Self::Context<'_>) -> Result<(), Self::Error>;
+    fn validate(&self, action: &A, context: &Self::Context<'_>) -> Result<(), Self::Error>;
 }
 
 #[derive(Debug, Clone)]
@@ -22,7 +22,7 @@ impl<R, T> RulesGuard<R, T> {
         Self { rules, target }
     }
 
-    pub fn apply_guarded<A>(&mut self, action: A, context: R::Context<'_>) -> Result<(), R::Error>
+    pub fn apply_guarded<A>(&mut self, action: A, context: &R::Context<'_>) -> Result<(), R::Error>
     where
         A: action::Action<T>,
         R: Rules<A>,
