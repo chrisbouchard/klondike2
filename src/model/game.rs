@@ -1,3 +1,5 @@
+use std::convert;
+
 use super::action::Actionable as _;
 
 use super::{action, dealer, deck, rules, table};
@@ -15,15 +17,17 @@ where
     table_guard: rules::RulesGuard<R, T>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub enum GameAction {
     Clear,
-    Deal,
     Start,
 }
 
 #[derive(Debug, Clone)]
 pub struct TableAction<A>(A);
+
+#[derive(Debug, Clone)]
+pub struct DealAction;
 
 impl<D, R, S, SH, T> Game<D, R, S, SH, T>
 where
@@ -70,33 +74,16 @@ where
     }
 }
 
-impl<A, D, R, RC, S, SH, T> action::Action<Game<D, R, S, SH, T>> for TableAction<A>
+impl<D, DC, R, S, SH, T> action::Action<Game<D, R, S, SH, T>> for GameAction
 where
-    A: action::Action<T>,
-    D: dealer::Dealer,
-    R: for<'a> rules::Rules<A, Context<'a> = RC>,
-    RC: for<'a> From<&'a Game<D, R, S, SH, T>>,
-    SH: deck::Shuffle,
-    T: table::Table,
-{
-    fn apply_to(self, target: &mut Game<D, R, S, SH, T>) {
-        let TableAction(action) = self;
-        let context: RC = (target as &Game<D, R, S, SH, T>).into();
-        target.table_guard.apply_guarded(action, &context).unwrap();
-    }
-}
-
-impl<A, D, DC, R, RC, S, SH, T> action::Action<Game<D, R, S, SH, T>> for GameAction
-where
-    A: action::Action<T>,
-    D: for<'a> dealer::Dealer<Action = A, Context<'a> = DC>,
+    D: for<'a> dealer::Dealer<Context<'a> = DC>,
     DC: for<'a> From<&'a Game<D, R, S, SH, T>>,
-    R: for<'a> rules::Rules<A, Context<'a> = RC>,
-    RC: for<'a> From<&'a Game<D, R, S, SH, T>>,
     SH: deck::Shuffle,
     T: table::Table,
 {
-    fn apply_to(self, target: &mut Game<D, R, S, SH, T>) {
+    type Error = convert::Infallible;
+
+    fn apply_to(self, target: &mut Game<D, R, S, SH, T>) -> Result<(), Self::Error> {
         match self {
             Self::Clear => {
                 target.dealer_iter = None;
@@ -108,21 +95,57 @@ where
 
                 target.started = false;
             }
-            Self::Deal => {
-                let dealer = &target.dealer;
-
-                let context: DC = (target as &Game<D, R, S, SH, T>).into();
-                let dealer_iter = target
-                    .dealer_iter
-                    .get_or_insert_with(|| dealer.deal(context));
-
-                if let Some(table_action) = dealer_iter.next() {
-                    target.apply(TableAction(table_action));
-                }
-            }
             Self::Start => {
                 target.started = true;
             }
         }
+
+        Ok(())
+    }
+}
+
+impl<A, D, R, RC, S, SH, T> action::Action<Game<D, R, S, SH, T>> for TableAction<A>
+where
+    A: action::Action<T>,
+    D: dealer::Dealer,
+    R: for<'a> rules::Rules<A, Context<'a> = RC>,
+    RC: for<'a> From<&'a Game<D, R, S, SH, T>>,
+    SH: deck::Shuffle,
+    T: table::Table,
+{
+    type Error = rules::RulesGuardError<R::Error, A::Error, A>;
+
+    fn apply_to(self, target: &mut Game<D, R, S, SH, T>) -> Result<(), Self::Error> {
+        let TableAction(action) = self;
+        let context: RC = (target as &Game<D, R, S, SH, T>).into();
+        target.table_guard.apply_guarded(action, &context)
+    }
+}
+
+impl<A, D, DC, R, RC, S, SH, T> action::Action<Game<D, R, S, SH, T>> for DealAction
+where
+    A: action::Action<T>,
+    D: for<'a> dealer::Dealer<Action = A, Context<'a> = DC>,
+    DC: for<'a> From<&'a Game<D, R, S, SH, T>>,
+    R: for<'a> rules::Rules<A, Context<'a> = RC>,
+    RC: for<'a> From<&'a Game<D, R, S, SH, T>>,
+    SH: deck::Shuffle,
+    T: table::Table,
+{
+    type Error = rules::RulesGuardError<R::Error, A::Error, A>;
+
+    fn apply_to(self, target: &mut Game<D, R, S, SH, T>) -> Result<(), Self::Error> {
+        let dealer = &target.dealer;
+
+        let context: DC = (target as &Game<D, R, S, SH, T>).into();
+        let dealer_iter = target
+            .dealer_iter
+            .get_or_insert_with(|| dealer.deal(context));
+
+        if let Some(table_action) = dealer_iter.next() {
+            target.apply(TableAction(table_action))?;
+        }
+
+        Ok(())
     }
 }

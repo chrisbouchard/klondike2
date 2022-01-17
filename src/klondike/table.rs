@@ -1,3 +1,5 @@
+use std::convert;
+
 use enum_like::EnumValues as _;
 
 use crate::model;
@@ -114,7 +116,9 @@ pub enum KlondikeTableAction {
 }
 
 impl<'a> model::action::Action<KlondikeTable> for KlondikeTableAction {
-    fn apply_to(self, table: &mut KlondikeTable) {
+    type Error = convert::Infallible;
+
+    fn apply_to(self, table: &mut KlondikeTable) -> Result<(), Self::Error> {
         match self {
             Self::Deal(target_pile_id) => {
                 let card = table.stock.take_top();
@@ -141,6 +145,8 @@ impl<'a> model::action::Action<KlondikeTable> for KlondikeTableAction {
                     .flip_top_to(model::card::Facing::FaceUp);
             }
         }
+
+        Ok(())
     }
 }
 

@@ -1,19 +1,24 @@
-use std::fmt;
+use std::{error, fmt};
 
-pub trait Action<T>: fmt::Debug + Clone {
-    fn apply_to(self, target: &mut T);
+pub trait Action<T>: fmt::Debug + Clone + 'static {
+    type Error: error::Error + 'static;
+
+    fn apply_to(self, target: &mut T) -> Result<(), Self::Error>;
 }
 
 pub trait Actionable<A>: Sized {
-    fn apply(&mut self, action: A);
+    type Error: error::Error + 'static;
 
-    fn apply_all<I>(&mut self, actions: I)
+    fn apply(&mut self, action: A) -> Result<(), Self::Error>;
+
+    fn apply_all<I>(&mut self, actions: I) -> Result<(), Self::Error>
     where
         I: IntoIterator<Item = A>,
     {
-        for action in actions {
-            self.apply(action);
-        }
+        actions
+            .into_iter()
+            .map(|action| self.apply(action))
+            .collect()
     }
 }
 
@@ -21,7 +26,9 @@ impl<A, T> Actionable<A> for T
 where
     A: Action<Self>,
 {
-    fn apply(&mut self, action: A) {
-        action.apply_to(self);
+    type Error = A::Error;
+
+    fn apply(&mut self, action: A) -> Result<(), Self::Error> {
+        action.apply_to(self)
     }
 }

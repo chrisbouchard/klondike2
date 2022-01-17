@@ -1,3 +1,5 @@
+use std::convert;
+
 use crate::model;
 
 use super::{game, settings, table};
@@ -24,7 +26,7 @@ impl<'a, SH> From<&'a game::KlondikeGame<SH>> for KlondikeRulesContext<'a> {
 
 impl model::rules::Rules<table::KlondikeTableAction> for KlondikeRules {
     type Context<'a> = KlondikeRulesContext<'a>;
-    type Error = ();
+    type Error = convert::Infallible;
 
     fn validate(
         &self,
