@@ -19,6 +19,7 @@ pub enum Facing {
 }
 
 impl Facing {
+    #[must_use]
     pub fn reversed(self) -> Self {
         match self {
             Self::FaceDown => Self::FaceUp,
@@ -211,16 +212,19 @@ impl Card {
         self.facing = self.facing.reversed()
     }
 
+    #[must_use]
     pub fn face_down(mut self) -> Self {
         self.facing = Facing::FaceDown;
         self
     }
 
+    #[must_use]
     pub fn face_up(mut self) -> Self {
         self.facing = Facing::FaceUp;
         self
     }
 
+    #[must_use]
     pub fn reversed(mut self) -> Self {
         self.reverse();
         self

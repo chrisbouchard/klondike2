@@ -17,8 +17,7 @@ pub trait Actionable<A>: Sized {
     {
         actions
             .into_iter()
-            .map(|action| self.apply(action))
-            .collect()
+            .try_for_each(|action| self.apply(action))
     }
 }
 

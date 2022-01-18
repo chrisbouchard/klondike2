@@ -96,6 +96,7 @@ impl Pile {
         }
     }
 
+    #[must_use]
     pub fn flipped(mut self) -> Self {
         self.flip();
         self
@@ -116,16 +117,19 @@ impl Pile {
         self.cards.extend(cards)
     }
 
+    #[must_use]
     pub fn take(&mut self, count: usize) -> Self {
         let start_index = self.len().saturating_sub(count);
         self.cards.drain(start_index..).collect::<Self>()
     }
 
+    #[must_use]
     pub fn take_top(&mut self) -> Self {
         let cards = self.cards.pop().into_iter().collect_vec();
         Pile { cards }
     }
 
+    #[must_use]
     pub fn take_all(&mut self) -> Self {
         let cards = mem::take(&mut self.cards);
         Pile { cards }

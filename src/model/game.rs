@@ -50,7 +50,7 @@ where
     }
 
     pub fn rules(&self) -> &R {
-        &self.table_guard.rules()
+        self.table_guard.rules()
     }
 
     pub fn settings(&self) -> &S {
@@ -58,7 +58,7 @@ where
     }
 
     pub fn table(&self) -> &T {
-        &self.table_guard.target()
+        self.table_guard.target()
     }
 }
 

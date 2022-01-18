@@ -78,7 +78,6 @@ where
     fn validate(&self, action: &A, context: &Self::Context<'_>) -> Result<(), Self::Error> {
         self.rules
             .iter()
-            .map(|rules| rules.validate(action, context))
-            .collect()
+            .try_for_each(|rules| rules.validate(action, context))
     }
 }

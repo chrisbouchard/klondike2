@@ -8,17 +8,17 @@ pub struct KlondikeRules;
 
 #[derive(Debug, Clone, Copy)]
 pub struct KlondikeRulesContext<'a> {
-    settings: &'a settings::KlondikeSettings,
-    started: bool,
-    table: &'a table::KlondikeTable,
+    _settings: &'a settings::KlondikeSettings,
+    _started: bool,
+    _table: &'a table::KlondikeTable,
 }
 
 impl<'a> From<game::KlondikeGameRulesContext<'a>> for KlondikeRulesContext<'a> {
     fn from(context: game::KlondikeGameRulesContext<'a>) -> Self {
         Self {
-            settings: context.settings,
-            started: context.started,
-            table: context.table,
+            _settings: context.settings,
+            _started: context.started,
+            _table: context.table,
         }
     }
 }
@@ -29,8 +29,8 @@ impl model::rules::Rules<table::KlondikeTableAction> for KlondikeRules {
 
     fn validate(
         &self,
-        action: &table::KlondikeTableAction,
-        context: &Self::Context<'_>,
+        _action: &table::KlondikeTableAction,
+        _context: &Self::Context<'_>,
     ) -> Result<(), Self::Error> {
         todo!()
     }
