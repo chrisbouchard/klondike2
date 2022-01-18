@@ -1,204 +1,168 @@
-use std::error;
+use std::convert;
 
-use snafu::ResultExt as _;
+use super::action::Actionable as _;
 
-use super::action;
-use super::card;
-use super::pile;
-use super::selection;
-use super::table;
+use super::{action, dealer, deck, rules, table};
 
 #[derive(Debug, Clone)]
-pub struct Game<T, S> {
-    table: T,
-    selection: S,
+pub struct Game<D, R, S, SH, T>
+where
+    D: dealer::Dealer,
+{
+    dealer: D,
+    dealer_iter: Option<D::Iter>,
+    settings: S,
+    shuffle: SH,
     started: bool,
+    table_guard: rules::RulesGuard<R, T>,
 }
 
-impl<T, S> Game<T, S> {
-    pub fn table(&self) -> &T {
-        &self.table
-    }
+#[derive(Debug, Clone)]
+pub struct GameDealerContext<'a, S> {
+    pub settings: &'a S,
+    pub started: bool,
+}
 
-    pub fn selection(&self) -> &S {
-        &self.selection
-    }
+#[derive(Debug, Clone)]
+pub struct GameRulesContext<'a, S, T> {
+    pub settings: &'a S,
+    pub started: bool,
+    pub table: &'a T,
+}
 
+#[derive(Debug, Clone)]
+pub enum GameAction {
+    Clear,
+    Start,
+}
+
+#[derive(Debug, Clone)]
+pub struct TableAction<A>(A);
+
+#[derive(Debug, Clone)]
+pub struct DealAction;
+
+impl<D, R, S, SH, T> Game<D, R, S, SH, T>
+where
+    D: dealer::Dealer,
+{
     pub fn is_started(&self) -> bool {
         self.started
     }
+
+    pub fn rules(&self) -> &R {
+        &self.table_guard.rules()
+    }
+
+    pub fn settings(&self) -> &S {
+        &self.settings
+    }
+
+    pub fn table(&self) -> &T {
+        &self.table_guard.target()
+    }
 }
 
-impl<T, S> Game<T, S>
+impl<D, R, S, SH, T> Game<D, R, S, SH, T>
 where
-    T: From<table::Table>,
-    S: From<selection::Selection>,
+    D: dealer::Dealer,
+    SH: deck::Shuffle,
+    T: table::Table,
 {
     // TODO: Possibly replace with a builder
-    pub fn new() -> Self {
+    pub fn new(dealer: D, rules: R, settings: S, mut shuffle: SH) -> Self {
+        let deck = deck::Deck::new_shuffled(&mut shuffle);
+        let table = table::Table::new_with_cards(deck);
+
+        let table_guarded = rules::RulesGuard::new(rules, table);
+
         Self {
-            table: T::from(table::Table::new()),
-            selection: S::from(selection::Selection::new()),
+            dealer,
+            settings,
+            shuffle,
+            table_guard: table_guarded,
+            dealer_iter: None,
             started: false,
         }
     }
 }
 
-impl<T, S> Default for Game<T, S>
+impl<D, R, S, SH, T> action::Action<Game<D, R, S, SH, T>> for GameAction
 where
-    T: From<table::Table>,
-    S: From<selection::Selection>,
+    D: for<'a> dealer::Dealer,
+    SH: deck::Shuffle,
+    T: table::Table,
 {
-    fn default() -> Self {
-        Self::new()
+    type Error = convert::Infallible;
+
+    fn apply_to(self, target: &mut Game<D, R, S, SH, T>) -> Result<(), Self::Error> {
+        match self {
+            Self::Clear => {
+                target.dealer_iter = None;
+
+                let deck = deck::Deck::new_shuffled(&mut target.shuffle);
+                target
+                    .table_guard
+                    .set_target(table::Table::new_with_cards(deck));
+
+                target.started = false;
+            }
+            Self::Start => {
+                target.started = true;
+            }
+        }
+
+        Ok(())
     }
 }
 
-#[derive(Debug, Clone)]
-pub enum Action {
-    CancelMove,
-    Deal(table::PileId, card::Card),
-    Draw(usize),
-    GoTo(table::PileId),
-    PlaceMove,
-    Reveal,
-    RevealAt(table::PileId),
-    SelectLess,
-    SelectMore,
-    SelectAll,
-    SendToFoundation,
-    Start,
-    Stock(pile::Pile),
-    TakeFromWaste,
+impl<A, D, R, RC, S, SH, T> action::Action<Game<D, R, S, SH, T>> for TableAction<A>
+where
+    A: action::Action<T>,
+    D: dealer::Dealer,
+    R: for<'a> rules::Rules<A, Context<'a> = RC>,
+    RC: for<'a> From<GameRulesContext<'a, S, T>>,
+    SH: deck::Shuffle,
+    T: table::Table,
+{
+    type Error = rules::RulesGuardError<R::Error, A::Error, A>;
+
+    fn apply_to(self, target: &mut Game<D, R, S, SH, T>) -> Result<(), Self::Error> {
+        let TableAction(action) = self;
+        let context = RC::from(GameRulesContext {
+            settings: &target.settings,
+            started: target.started,
+            table: target.table_guard.target(),
+        });
+        target.table_guard.apply_guarded(action, &context)
+    }
 }
 
-#[derive(Debug, snafu::Snafu)]
-pub enum Error<T, S>
+impl<A, D, DC, R, RC, S, SH, T> action::Action<Game<D, R, S, SH, T>> for DealAction
 where
-    T: error::Error + 'static,
-    S: error::Error + 'static,
+    A: action::Action<T>,
+    D: for<'a> dealer::Dealer<Action = A, Context<'a> = DC>,
+    DC: for<'a> From<GameDealerContext<'a, S>>,
+    R: for<'a> rules::Rules<A, Context<'a> = RC>,
+    RC: for<'a> From<GameRulesContext<'a, S, T>>,
+    SH: deck::Shuffle,
+    T: table::Table,
 {
-    TableError { source: T, action: Action },
-    SelectionError { source: S, action: Action },
-}
+    type Error = rules::RulesGuardError<R::Error, A::Error, A>;
 
-impl<T, S> action::Action<Game<T, S>> for Action
-where
-    T: action::Actionable<table::Action> + AsRef<table::Table>,
-    S: action::Actionable<selection::Action> + AsRef<selection::Selection>,
-    T::Error: error::Error + 'static,
-    S::Error: error::Error + 'static,
-{
-    type Error = Error<T::Error, S::Error>;
+    fn apply_to(self, target: &mut Game<D, R, S, SH, T>) -> Result<(), Self::Error> {
+        let dealer = &target.dealer;
 
-    fn apply_to(self, game: &mut Game<T, S>) -> Result<(), Self::Error> {
-        match self {
-            Self::CancelMove => {
-                game.selection
-                    .apply(selection::Action::Return)
-                    .context(SelectionError { action: self })?;
-            }
-            Self::Deal(target_id, ref card) => {
-                game.table
-                    .apply(table::Action::Deal(target_id, card.clone()))
-                    .context(TableError { action: self })?;
-            }
-            Self::Draw(count) => {
-                game.table
-                    .apply(table::Action::Draw(count))
-                    .context(TableError { action: self })?;
-            }
-            Self::GoTo(target_id) => {
-                game.selection
-                    .apply(selection::Action::GoTo(target_id))
-                    .context(SelectionError { action: self })?;
-            }
-            Self::PlaceMove => {
-                let source_id = game.selection.as_ref().source();
-                let target_id = game.selection.as_ref().target();
+        let context = DC::from(GameDealerContext {
+            settings: &target.settings,
+            started: target.started,
+        });
+        let dealer_iter = target
+            .dealer_iter
+            .get_or_insert_with(|| dealer.deal(context));
 
-                if source_id != target_id {
-                    let count = game.selection.as_ref().count();
-                    game.table
-                        .apply(table::Action::Move(source_id, target_id, count))
-                        .context(TableError {
-                            action: self.clone(),
-                        })?;
-                }
-
-                game.selection
-                    .apply(selection::Action::Resize(0))
-                    .context(SelectionError { action: self })?;
-            }
-            Self::Reveal => {
-                let target_id = game.selection.as_ref().target();
-                game.table
-                    .apply(table::Action::Reveal(target_id))
-                    .context(TableError { action: self })?;
-            }
-            Self::RevealAt(target_id) => {
-                game.table
-                    .apply(table::Action::Reveal(target_id))
-                    .context(TableError { action: self })?;
-            }
-            Self::SelectLess => {
-                let new_count = game.selection.as_ref().count().saturating_sub(1);
-                game.selection
-                    .apply(selection::Action::Resize(new_count))
-                    .context(SelectionError { action: self })?;
-            }
-            Self::SelectMore => {
-                let new_count = game.selection.as_ref().count().saturating_add(1);
-                game.selection
-                    .apply(selection::Action::Resize(new_count))
-                    .context(SelectionError { action: self })?;
-            }
-            Self::SelectAll => {
-                let target_id = game.selection.as_ref().target();
-                let new_count = game
-                    .table
-                    .as_ref()
-                    .pile(target_id)
-                    .top_face_up_cards()
-                    .len();
-
-                game.selection
-                    .apply(selection::Action::Resize(new_count))
-                    .context(SelectionError { action: self })?;
-            }
-            Self::SendToFoundation => {
-                let source_id = game.selection.as_ref().source();
-                let source_pile = game.table.as_ref().pile(source_id);
-
-                if let Some(top_card) = source_pile.top_card() {
-                    let suit = top_card.suit();
-                    let target_id = table::PileId::Foundation(suit);
-                    game.table
-                        .apply(table::Action::Move(source_id, target_id, 1))
-                        .context(TableError {
-                            action: self.clone(),
-                        })?;
-                }
-
-                let new_count = game.selection.as_ref().count().saturating_sub(1);
-                game.selection
-                    .apply(selection::Action::Resize(new_count))
-                    .context(SelectionError { action: self })?;
-            }
-            Self::Start => {
-                game.started = true;
-            }
-            Self::Stock(ref stock) => {
-                game.table
-                    .apply(table::Action::AddStock(stock.clone()))
-                    .context(TableError { action: self })?;
-            }
-            Self::TakeFromWaste => {
-                // This implicitly cancels the existing selection (if any).
-                game.selection
-                    .apply(selection::Action::Hold(table::PileId::Waste, 1))
-                    .context(SelectionError { action: self })?;
-            }
+        if let Some(table_action) = dealer_iter.next() {
+            target.apply(TableAction(table_action))?;
         }
 
         Ok(())

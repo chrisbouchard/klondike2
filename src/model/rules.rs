@@ -1,67 +1,85 @@
-use std::error;
-use std::fmt;
-
 use snafu::ResultExt as _;
+
+use std::{error, fmt};
+
+use super::action::Actionable as _;
 
 use super::action;
 
-pub trait Rules<T, A> {
-    type Error: error::Error + Sized + 'static;
+pub trait Rules<A>: fmt::Debug + Clone {
+    type Context<'a>;
+    type Error: fmt::Debug + error::Error + 'static;
 
-    fn check_rules(&self, target: &T, action: &A) -> Result<(), Self::Error>;
-}
-
-#[derive(Debug, snafu::Snafu)]
-pub enum Error<E, U, A>
-where
-    E: error::Error + 'static,
-    U: error::Error + 'static,
-    A: fmt::Debug + 'static,
-{
-    Invalid { source: E, action: A },
-    Underlying { source: U, action: A },
+    fn validate(&self, action: &A, context: &Self::Context<'_>) -> Result<(), Self::Error>;
 }
 
 #[derive(Debug, Clone)]
 pub struct RulesGuard<R, T> {
     rules: R,
-    inner: T,
+    target: T,
 }
 
-impl<R, T> Default for RulesGuard<R, T>
+#[derive(Debug, snafu::Snafu)]
+pub enum RulesGuardError<RE, AE, A>
 where
-    R: Default,
-    T: Default,
+    RE: error::Error + 'static,
+    AE: error::Error + 'static,
 {
-    fn default() -> Self {
-        RulesGuard {
-            rules: Default::default(),
-            inner: Default::default(),
-        }
+    RuleError { action: A, source: RE },
+    ActionError { action: A, source: AE },
+}
+
+impl<R, T> RulesGuard<R, T> {
+    pub fn new(rules: R, target: T) -> Self {
+        Self { rules, target }
+    }
+
+    pub fn apply_guarded<A>(
+        &mut self,
+        action: A,
+        context: &R::Context<'_>,
+    ) -> Result<(), RulesGuardError<R::Error, A::Error, A>>
+    where
+        A: action::Action<T>,
+        R: Rules<A>,
+    {
+        self.rules.validate(&action, context).context(RuleError {
+            action: action.clone(),
+        })?;
+        self.target
+            .apply(action.clone())
+            .context(ActionError { action })
+    }
+
+    pub fn rules(&self) -> &R {
+        &self.rules
+    }
+
+    pub fn target(&self) -> &T {
+        &self.target
+    }
+
+    pub fn set_target(&mut self, target: T) {
+        self.target = target;
     }
 }
 
-impl<R, T, A> action::Action<RulesGuard<R, T>> for A
+#[derive(Debug, Clone)]
+pub struct CompoundRules<R> {
+    rules: Vec<R>,
+}
+
+impl<A, R> Rules<A> for CompoundRules<R>
 where
-    R: Rules<T, A>,
-    T: action::Actionable<A>,
-    A: action::Action<T> + 'static,
+    R: Rules<A>,
 {
-    type Error = Error<R::Error, T::Error, A>;
+    type Context<'a> = R::Context<'a>;
+    type Error = R::Error;
 
-    fn apply_to(self, target: &mut RulesGuard<R, T>) -> Result<(), Self::Error> {
-        target
-            .rules
-            .check_rules(&target.inner, &self)
-            .context(Invalid {
-                action: self.clone(),
-            })?;
-
-        // Make a clone so we have the original to return in case of an error.
-        let clone = self.clone();
-        target
-            .inner
-            .apply(clone)
-            .context(Underlying { action: self })
+    fn validate(&self, action: &A, context: &Self::Context<'_>) -> Result<(), Self::Error> {
+        self.rules
+            .iter()
+            .map(|rules| rules.validate(action, context))
+            .collect()
     }
 }

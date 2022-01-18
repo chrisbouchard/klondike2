@@ -1,3 +1,5 @@
+use std::cmp;
+
 use enum_like::EnumLike;
 use enum_like::EnumValues;
 
@@ -9,7 +11,7 @@ pub enum Color {
     Red,
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, derive_more::Display)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, derive_more::Display, enum_like_derive::EnumLike)]
 pub enum Facing {
     #[display(fmt = "Face down")]
     FaceDown,
@@ -124,7 +126,17 @@ impl Suit {
     }
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, derive_more::Display, enum_like_derive::EnumLike)]
+#[derive(
+    Debug,
+    Copy,
+    Clone,
+    PartialOrd,
+    Ord,
+    Eq,
+    PartialEq,
+    derive_more::Display,
+    enum_like_derive::EnumLike,
+)]
 #[display(fmt = "{} of {}", rank, suit)]
 pub struct CardFace {
     pub suit: Suit,
@@ -225,5 +237,17 @@ impl Card {
 
     pub fn values_face_up() -> impl Iterator<Item = Self> {
         Self::values_with_facing(Facing::FaceUp)
+    }
+}
+
+impl PartialOrd for Card {
+    fn partial_cmp(&self, other: &Self) -> Option<cmp::Ordering> {
+        self.face.partial_cmp(&other.face)
+    }
+}
+
+impl Ord for Card {
+    fn cmp(&self, other: &Self) -> cmp::Ordering {
+        self.face.cmp(&other.face)
     }
 }

@@ -1,14 +1,12 @@
 use std::iter;
 use std::mem;
-use std::slice;
-use std::vec;
 
 use itertools::Itertools as _;
 
 use super::card;
 
-pub type Iter<'a> = slice::Iter<'a, card::Card>;
-pub type IntoIter = vec::IntoIter<card::Card>;
+pub type Iter<'a> = <&'a [card::Card] as IntoIterator>::IntoIter;
+pub type IntoIter = <Vec<card::Card> as IntoIterator>::IntoIter;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Pile {
@@ -18,6 +16,15 @@ pub struct Pile {
 impl Pile {
     pub const fn new() -> Self {
         Self { cards: Vec::new() }
+    }
+
+    pub fn new_with_cards<I>(cards: I) -> Self
+    where
+        I: IntoIterator<Item = card::Card>,
+    {
+        let mut pile = Self::new();
+        pile.place_cards(cards);
+        pile
     }
 
     pub fn iter(&self) -> Iter {
@@ -57,6 +64,14 @@ impl Pile {
 
     pub fn is_empty(&self) -> bool {
         self.cards.is_empty()
+    }
+
+    pub fn is_face_down(&self) -> bool {
+        self.cards.iter().all(card::Card::is_face_down)
+    }
+
+    pub fn is_face_up(&self) -> bool {
+        self.cards.iter().all(card::Card::is_face_up)
     }
 
     pub fn len(&self) -> usize {
@@ -143,9 +158,10 @@ impl<'a> IntoIterator for &'a Pile {
 }
 
 impl iter::FromIterator<card::Card> for Pile {
-    fn from_iter<T: IntoIterator<Item = card::Card>>(iter: T) -> Self {
-        Self {
-            cards: velcro::vec![..iter],
-        }
+    fn from_iter<I>(iter: I) -> Self
+    where
+        I: IntoIterator<Item = card::Card>,
+    {
+        Self::new_with_cards(iter)
     }
 }

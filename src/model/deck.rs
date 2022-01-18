@@ -1,27 +1,14 @@
-use std::vec;
+use std::fmt;
 
 use itertools::Itertools as _;
 use rand::seq::SliceRandom as _;
 
 use super::card;
 
-pub type IntoIter = vec::IntoIter<card::Card>;
+pub type IntoIter = <Vec<card::Card> as IntoIterator>::IntoIter;
 
-#[derive(Debug, Copy, Clone)]
-pub enum Shuffle {
-    None,
-    Random,
-}
-
-impl Shuffle {
-    pub fn shuffle(self, cards: &mut [card::Card]) {
-        match self {
-            Self::None => {}
-            Self::Random => {
-                cards.shuffle(&mut rand::thread_rng());
-            }
-        }
-    }
+pub trait Shuffle: fmt::Debug {
+    fn shuffle(&mut self, cards: &mut [card::Card]);
 }
 
 #[derive(Debug, Clone)]
@@ -35,7 +22,13 @@ impl Deck {
         Self { cards }
     }
 
-    pub fn shuffle(&mut self, shuffle: Shuffle) {
+    pub fn new_shuffled(shuffle: &mut dyn Shuffle) -> Self {
+        let mut deck = Self::new();
+        deck.shuffle(shuffle);
+        deck
+    }
+
+    pub fn shuffle(&mut self, shuffle: &mut dyn Shuffle) {
         shuffle.shuffle(&mut self.cards);
     }
 }
@@ -52,5 +45,30 @@ impl IntoIterator for Deck {
 impl Default for Deck {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct NoShuffle;
+
+impl Shuffle for NoShuffle {
+    fn shuffle(&mut self, _cards: &mut [card::Card]) {}
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct RandomShuffle;
+
+impl Shuffle for RandomShuffle {
+    fn shuffle(&mut self, cards: &mut [card::Card]) {
+        cards.shuffle(&mut rand::thread_rng());
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct UnShuffle;
+
+impl Shuffle for UnShuffle {
+    fn shuffle(&mut self, cards: &mut [card::Card]) {
+        cards.sort();
     }
 }
