@@ -1,10 +1,10 @@
 #[derive(Debug, Clone, Copy)]
-pub struct Settings {
+pub struct KlondikeSettings {
     pub allow_move_from_foundation: bool,
     pub tableaux_width: usize,
 }
 
-impl Default for Settings {
+impl Default for KlondikeSettings {
     fn default() -> Self {
         Self {
             allow_move_from_foundation: true,

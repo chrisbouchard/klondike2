@@ -9,7 +9,7 @@ pub struct KlondikeRules;
 
 #[derive(Debug, Clone, Copy)]
 pub struct KlondikeRulesContext<'a> {
-    settings: &'a settings::Settings,
+    settings: &'a settings::KlondikeSettings,
     started: bool,
     table: &'a table::KlondikeTable,
 }
