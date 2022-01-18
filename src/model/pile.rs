@@ -1,5 +1,4 @@
-use std::iter;
-use std::mem;
+use std::{iter, mem};
 
 use itertools::Itertools as _;
 

@@ -1,7 +1,6 @@
 use std::convert;
 
 use super::action::Actionable as _;
-
 use super::{action, dealer, deck, rules, table};
 
 #[derive(Debug, Clone)]

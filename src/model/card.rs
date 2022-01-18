@@ -1,7 +1,6 @@
 use std::cmp;
 
-use enum_like::EnumLike;
-use enum_like::EnumValues;
+use enum_like::{EnumLike, EnumValues};
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, derive_more::Display)]
 pub enum Color {

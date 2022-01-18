@@ -1,8 +1,7 @@
 use std::convert;
 
-use crate::model;
-
 use super::{game, settings, table};
+use crate::model;
 
 #[derive(Debug, Clone, Default)]
 pub struct KlondikeRules;

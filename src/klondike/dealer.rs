@@ -1,6 +1,5 @@
-use crate::model;
-
 use super::{game, table};
+use crate::model;
 
 #[derive(Debug, Clone)]
 pub struct KlondikeDealer;
@@ -173,12 +172,11 @@ impl DealerIterState {
 
 #[cfg(test)]
 mod tests {
-    use crate::model::dealer::Dealer as _;
-
     use assert_matches::assert_matches;
     use test_case::test_case;
 
     use super::*;
+    use crate::model::dealer::Dealer as _;
 
     #[test]
     fn dealer_should_deal_next_card() {
