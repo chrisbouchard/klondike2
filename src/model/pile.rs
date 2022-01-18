@@ -2,7 +2,7 @@ use std::{iter, mem};
 
 use itertools::Itertools as _;
 
-use super::card;
+use crate::model::card;
 
 pub type Iter<'a> = <&'a [card::Card] as IntoIterator>::IntoIter;
 pub type IntoIter = <Vec<card::Card> as IntoIterator>::IntoIter;

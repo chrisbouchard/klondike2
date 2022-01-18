@@ -1,4 +1,4 @@
-use super::{game, table};
+use crate::klondike::{game, table};
 use crate::model;
 
 #[derive(Debug, Clone)]

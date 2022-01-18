@@ -1,6 +1,6 @@
 use std::fmt;
 
-use super::{card, pile};
+use crate::model::{card, pile};
 
 pub trait Table: fmt::Debug + Clone {
     type PileId: fmt::Debug + Copy + Eq;

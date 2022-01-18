@@ -1,6 +1,6 @@
 use std::convert;
 
-use super::{game, settings, table};
+use crate::klondike::{game, settings, table};
 use crate::model;
 
 #[derive(Debug, Clone, Default)]

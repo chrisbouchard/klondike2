@@ -3,7 +3,7 @@ use std::fmt;
 use itertools::Itertools as _;
 use rand::seq::SliceRandom as _;
 
-use super::card;
+use crate::model::card;
 
 pub type IntoIter = <Vec<card::Card> as IntoIterator>::IntoIter;
 

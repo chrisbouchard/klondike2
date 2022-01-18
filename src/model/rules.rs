@@ -2,8 +2,8 @@ use std::{error, fmt};
 
 use snafu::ResultExt as _;
 
-use super::action;
-use super::action::Actionable as _;
+use crate::model::action;
+use crate::model::action::Actionable as _;
 
 pub trait Rules<A>: fmt::Debug + Clone {
     type Context<'a>;

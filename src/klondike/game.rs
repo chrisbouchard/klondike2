@@ -1,4 +1,4 @@
-use super::{dealer, rules, settings, table};
+use crate::klondike::{dealer, rules, settings, table};
 use crate::model;
 
 pub type KlondikeGame<SH> = model::game::Game<
