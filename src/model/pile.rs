@@ -1,4 +1,3 @@
-use std::iter::FromIterator;
 use std::mem;
 
 use itertools::Itertools as _;
