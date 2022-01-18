@@ -1,3 +1,5 @@
+use std::fmt;
+
 use itertools::Itertools as _;
 use rand::seq::SliceRandom as _;
 
@@ -5,7 +7,7 @@ use super::card;
 
 pub type IntoIter = <Vec<card::Card> as IntoIterator>::IntoIter;
 
-pub trait Shuffle {
+pub trait Shuffle: fmt::Debug {
     fn shuffle(&mut self, cards: &mut [card::Card]);
 }
 
@@ -46,14 +48,14 @@ impl Default for Deck {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct NoShuffle;
 
 impl Shuffle for NoShuffle {
     fn shuffle(&mut self, _cards: &mut [card::Card]) {}
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct RandomShuffle;
 
 impl Shuffle for RandomShuffle {
@@ -62,7 +64,7 @@ impl Shuffle for RandomShuffle {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct UnShuffle;
 
 impl Shuffle for UnShuffle {

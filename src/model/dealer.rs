@@ -1,6 +1,6 @@
 use std::fmt;
 
-pub trait Dealer: Clone + fmt::Debug {
+pub trait Dealer: fmt::Debug + Clone {
     type Action;
     type Context<'a>;
     type Iter: Iterator<Item = Self::Action> + Clone;
