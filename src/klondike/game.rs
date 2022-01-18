@@ -9,3 +9,7 @@ pub type KlondikeGame<SH> = model::game::Game<
     SH,
     table::KlondikeTable,
 >;
+
+pub type KlondikeGameDealerContext<'a> = model::game::GameDealerContext<'a, settings::Settings>;
+pub type KlondikeGameRulesContext<'a> =
+    model::game::GameRulesContext<'a, settings::Settings, table::KlondikeTable>;

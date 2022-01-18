@@ -14,12 +14,12 @@ pub struct KlondikeRulesContext<'a> {
     table: &'a table::KlondikeTable,
 }
 
-impl<'a, SH> From<&'a game::KlondikeGame<SH>> for KlondikeRulesContext<'a> {
-    fn from(game: &'a game::KlondikeGame<SH>) -> Self {
+impl<'a> From<game::KlondikeGameRulesContext<'a>> for KlondikeRulesContext<'a> {
+    fn from(context: game::KlondikeGameRulesContext<'a>) -> Self {
         Self {
-            settings: game.settings(),
-            started: game.is_started(),
-            table: game.table(),
+            settings: context.settings,
+            started: context.started,
+            table: context.table,
         }
     }
 }

@@ -18,6 +18,19 @@ where
 }
 
 #[derive(Debug, Clone)]
+pub struct GameDealerContext<'a, S> {
+    pub settings: &'a S,
+    pub started: bool,
+}
+
+#[derive(Debug, Clone)]
+pub struct GameRulesContext<'a, S, T> {
+    pub settings: &'a S,
+    pub started: bool,
+    pub table: &'a T,
+}
+
+#[derive(Debug, Clone)]
 pub enum GameAction {
     Clear,
     Start,
@@ -74,10 +87,9 @@ where
     }
 }
 
-impl<D, DC, R, S, SH, T> action::Action<Game<D, R, S, SH, T>> for GameAction
+impl<D, R, S, SH, T> action::Action<Game<D, R, S, SH, T>> for GameAction
 where
-    D: for<'a> dealer::Dealer<Context<'a> = DC>,
-    DC: for<'a> From<&'a Game<D, R, S, SH, T>>,
+    D: for<'a> dealer::Dealer,
     SH: deck::Shuffle,
     T: table::Table,
 {
@@ -109,7 +121,7 @@ where
     A: action::Action<T>,
     D: dealer::Dealer,
     R: for<'a> rules::Rules<A, Context<'a> = RC>,
-    RC: for<'a> From<&'a Game<D, R, S, SH, T>>,
+    RC: for<'a> From<GameRulesContext<'a, S, T>>,
     SH: deck::Shuffle,
     T: table::Table,
 {
@@ -117,7 +129,11 @@ where
 
     fn apply_to(self, target: &mut Game<D, R, S, SH, T>) -> Result<(), Self::Error> {
         let TableAction(action) = self;
-        let context: RC = (target as &Game<D, R, S, SH, T>).into();
+        let context = RC::from(GameRulesContext {
+            settings: &target.settings,
+            started: target.started,
+            table: target.table_guard.target(),
+        });
         target.table_guard.apply_guarded(action, &context)
     }
 }
@@ -126,9 +142,9 @@ impl<A, D, DC, R, RC, S, SH, T> action::Action<Game<D, R, S, SH, T>> for DealAct
 where
     A: action::Action<T>,
     D: for<'a> dealer::Dealer<Action = A, Context<'a> = DC>,
-    DC: for<'a> From<&'a Game<D, R, S, SH, T>>,
+    DC: for<'a> From<GameDealerContext<'a, S>>,
     R: for<'a> rules::Rules<A, Context<'a> = RC>,
-    RC: for<'a> From<&'a Game<D, R, S, SH, T>>,
+    RC: for<'a> From<GameRulesContext<'a, S, T>>,
     SH: deck::Shuffle,
     T: table::Table,
 {
@@ -137,7 +153,10 @@ where
     fn apply_to(self, target: &mut Game<D, R, S, SH, T>) -> Result<(), Self::Error> {
         let dealer = &target.dealer;
 
-        let context: DC = (target as &Game<D, R, S, SH, T>).into();
+        let context = DC::from(GameDealerContext {
+            settings: &target.settings,
+            started: target.started,
+        });
         let dealer_iter = target
             .dealer_iter
             .get_or_insert_with(|| dealer.deal(context));

@@ -20,13 +20,10 @@ pub struct KlondikeDealerContext {
     tableaux_width: usize,
 }
 
-impl<'a, S> From<&'a game::KlondikeGame<S>> for KlondikeDealerContext
-where
-    S: model::deck::Shuffle,
-{
-    fn from(game: &'a game::KlondikeGame<S>) -> Self {
+impl<'a> From<game::KlondikeGameDealerContext<'a>> for KlondikeDealerContext {
+    fn from(context: game::KlondikeGameDealerContext<'a>) -> Self {
         Self {
-            tableaux_width: game.settings().tableaux_width,
+            tableaux_width: context.settings.tableaux_width,
         }
     }
 }
