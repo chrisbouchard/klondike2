@@ -1,13 +1,14 @@
-use std::{error, fmt};
+use std::error::Error;
+use std::fmt::Debug;
 
-pub trait Action<T>: fmt::Debug + Clone + 'static {
-    type Error: error::Error + 'static;
+pub trait Action<T>: Debug + Clone + 'static {
+    type Error: Error + 'static;
 
     fn apply_to(self, target: &mut T) -> Result<(), Self::Error>;
 }
 
 pub trait Actionable<A>: Sized {
-    type Error: error::Error + 'static;
+    type Error: Error + 'static;
 
     fn apply(&mut self, action: A) -> Result<(), Self::Error>;
 

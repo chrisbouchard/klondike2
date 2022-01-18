@@ -1,4 +1,5 @@
-use std::{iter, mem};
+use std::iter::FromIterator;
+use std::mem;
 
 use itertools::Itertools as _;
 
@@ -160,7 +161,7 @@ impl<'a> IntoIterator for &'a Pile {
     }
 }
 
-impl iter::FromIterator<card::Card> for Pile {
+impl FromIterator<card::Card> for Pile {
     fn from_iter<I>(iter: I) -> Self
     where
         I: IntoIterator<Item = card::Card>,

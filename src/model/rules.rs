@@ -1,13 +1,14 @@
-use std::{error, fmt};
+use std::error::Error;
+use std::fmt::Debug;
 
-use snafu::ResultExt as _;
+use snafu::{ResultExt as _, Snafu};
 
 use crate::model::action;
 use crate::model::action::Actionable as _;
 
-pub trait Rules<A>: fmt::Debug + Clone {
+pub trait Rules<A>: Debug + Clone {
     type Context<'a>;
-    type Error: fmt::Debug + error::Error + 'static;
+    type Error: Debug + Error + 'static;
 
     fn validate(&self, action: &A, context: &Self::Context<'_>) -> Result<(), Self::Error>;
 }
@@ -18,11 +19,11 @@ pub struct RulesGuard<R, T> {
     target: T,
 }
 
-#[derive(Debug, snafu::Snafu)]
+#[derive(Debug, Snafu)]
 pub enum RulesGuardError<RE, AE, A>
 where
-    RE: error::Error + 'static,
-    AE: error::Error + 'static,
+    RE: Error + 'static,
+    AE: Error + 'static,
 {
     RuleError { action: A, source: RE },
     ActionError { action: A, source: AE },
